@@ -1,6 +1,6 @@
 package eu.ottop.yamlauncher.settings
 
-import android.app.AlertDialog
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import android.content.Context
 import android.util.TypedValue
 import androidx.core.content.edit
@@ -450,7 +450,7 @@ class SharedPreferenceManager(private val context: Context) {
     }
 
     fun resetAllPreferences() {
-        AlertDialog.Builder(context).apply {
+        MaterialAlertDialogBuilder(context).apply {
             setTitle(context.getString(R.string.confirm_title))
             setMessage(context.getString(R.string.reset_confirm_text))
             setPositiveButton(context.getString(R.string.confirm_yes)) { _, _ ->

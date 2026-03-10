@@ -1,6 +1,6 @@
 package eu.ottop.yamlauncher.settings
 
-import android.app.AlertDialog
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import android.content.Context
 import android.os.Bundle
 import android.text.Editable
@@ -125,7 +125,7 @@ class LocationFragment : Fragment(), LocationListAdapter.OnItemClickListener, Ti
     }
 
     private fun showConfirmationDialog(locationName: String?, latitude: String?, longitude: String?) {
-        AlertDialog.Builder(requireContext()).apply {
+        MaterialAlertDialogBuilder(requireContext()).apply {
             setTitle(getString(R.string.confirm_title))
             setMessage("${getString(R.string.app_confirm_text)} $locationName?")
             setPositiveButton(getString(R.string.confirm_yes)) { _, _ ->

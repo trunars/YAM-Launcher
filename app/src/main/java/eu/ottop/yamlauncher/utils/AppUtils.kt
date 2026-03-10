@@ -1,6 +1,6 @@
 package eu.ottop.yamlauncher.utils
 
-import android.app.AlertDialog
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import android.content.ComponentName
 import android.content.Context
 import android.content.pm.ApplicationInfo
@@ -114,7 +114,7 @@ class AppUtils(private val context: Context, private val launcherApps: LauncherA
     }
 
     private fun showConfirmationDialog(componentName: ComponentName, userHandle: UserHandle) {
-        AlertDialog.Builder(context).apply {
+        MaterialAlertDialogBuilder(context).apply {
             setTitle(getString(context, R.string.confirm_title))
             setMessage(getString(context, R.string.launch_confirmation_text))
 

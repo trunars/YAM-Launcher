@@ -2,7 +2,7 @@ package eu.ottop.yamlauncher.utils
 
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.AccessibilityServiceInfo
-import android.app.AlertDialog
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -61,7 +61,7 @@ class GestureUtils(private val context: Context) {
     }
 
     fun promptEnableAccessibility() {
-        AlertDialog.Builder(context).apply {
+        MaterialAlertDialogBuilder(context).apply {
             setTitle(context.getString(R.string.confirm_title))
             setMessage(context.getString(R.string.screenlock_confirmation))
             setPositiveButton(context.getString(R.string.confirm_yes)) { _, _ ->

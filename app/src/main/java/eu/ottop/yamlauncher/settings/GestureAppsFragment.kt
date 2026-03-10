@@ -1,6 +1,6 @@
 package eu.ottop.yamlauncher.settings
 
-import android.app.AlertDialog
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import android.content.Context
 import android.content.pm.LauncherActivityInfo
 import android.content.pm.LauncherApps
@@ -144,7 +144,7 @@ class GestureAppsFragment(private val direction: String) : Fragment(),
     }
 
     private fun showConfirmationDialog(appInfo: LauncherActivityInfo, appName: String, profile: Int) {
-        AlertDialog.Builder(requireContext()).apply {
+        MaterialAlertDialogBuilder(requireContext()).apply {
             setTitle(getString(R.string.confirm_title))
             setMessage("${getString(R.string.app_confirm_text)} $appName?")
 
