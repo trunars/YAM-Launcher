@@ -93,7 +93,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
     private lateinit var weatherSystem: WeatherSystem
     private lateinit var appUtils: AppUtils
     private lateinit var biometricUtils: BiometricUtils
-      
+
     private val stringUtils = StringUtils()
     private val permissionUtils = PermissionUtils()
     private lateinit var uiUtils: UIUtils
@@ -218,7 +218,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
         }
 
         setupApps()
-        
+
         // Check if default launcher banner should be shown
         updateDefaultLauncherBanner()
 
@@ -466,22 +466,41 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
     private fun setShortcutListeners(textView: TextView, savedView: List<String>?) {
         textView.setOnClickListener {
             if (savedView != null && canLaunchShortcut) {
-                val userHandle = launcherApps.profiles[savedView[1].toInt()]
-                val componentName = if (savedView[0].contains("/")) {
-                    val (packageName, className) = savedView[0].split("/")
+                val profileIndex = savedView.getOrNull(1)?.toIntOrNull()
+                if (profileIndex == null || profileIndex !in launcherApps.profiles.indices) {
+                    logger.w("MainActivity", "Failed to launch shortcut: invalid profile index")
+                    Toast.makeText(this, this.getString(R.string.launch_error), Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+                val userHandle = launcherApps.profiles[profileIndex]
+                val componentString = savedView.getOrNull(0)
+                if (componentString.isNullOrEmpty()) {
+                    logger.w("MainActivity", "Failed to launch shortcut: empty component")
+                    Toast.makeText(this, this.getString(R.string.launch_error), Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+                val componentName = if (componentString.contains("/")) {
+                    val parts = componentString.split("/", limit = 2)
+                    if (parts.size != 2) {
+                        logger.w("MainActivity", "Failed to launch shortcut: invalid component $componentString")
+                        Toast.makeText(this, this.getString(R.string.launch_error), Toast.LENGTH_SHORT).show()
+                        return@setOnClickListener
+                    }
+                    val packageName = parts[0]
+                    val className = parts[1]
                     val cn = ComponentName(packageName, className)
                     if (launcherApps.getActivityList(packageName, userHandle).none { it.componentName == cn }) {
-                        logger.w("MainActivity", "Failed to launch shortcut: ${savedView[0]} not found")
+                        logger.w("MainActivity", "Failed to launch shortcut: $componentString not found")
                         Toast.makeText(this, this.getString(R.string.launch_error), Toast.LENGTH_SHORT).show()
                         return@setOnClickListener
                     }
                     cn
                 } else {
-                    val mainActivity = launcherApps.getActivityList(savedView[0], userHandle).firstOrNull()
+                    val mainActivity = launcherApps.getActivityList(componentString, userHandle).firstOrNull()
                     if (mainActivity != null) {
                         mainActivity.componentName
                     } else {
-                        logger.w("MainActivity", "Failed to launch shortcut: ${savedView[0]} not found")
+                        logger.w("MainActivity", "Failed to launch shortcut: $componentString not found")
                         Toast.makeText(this, this.getString(R.string.launch_error), Toast.LENGTH_SHORT).show()
                         return@setOnClickListener
                     }
@@ -555,7 +574,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
             gestureDetector.onTouchEvent(event)
             true
         }
-        
+
         // Set up default launcher banner button
         findViewById<android.widget.TextView>(R.id.setDefaultLauncherButton)?.setOnClickListener {
             val intent = Intent(android.provider.Settings.ACTION_HOME_SETTINGS)
@@ -570,7 +589,12 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
         clock.setOnClickListener { _ ->
             if (sharedPreferenceManager.isClockGestureEnabled()) {
                 if (sharedPreferenceManager.isGestureEnabled("clock") && clockApp.first != null && clockApp.second != null) {
-                    launcherApps.startMainActivity(clockApp.first!!.componentName, launcherApps.profiles[clockApp.second!!], null, null)
+                    try {
+                        launcherApps.startMainActivity(clockApp.first!!.componentName, launcherApps.profiles[clockApp.second!!], null, null)
+                    } catch (e: Exception) {
+                        logger.e("MainActivity", "Failed to launch clock gesture app", e)
+                        Toast.makeText(this@MainActivity, getString(R.string.launch_error), Toast.LENGTH_SHORT).show()
+                    }
                 } else {
                     val intent = Intent(AlarmClock.ACTION_SHOW_ALARMS)
                     if (intent.resolveActivity(packageManager) != null) {
@@ -584,7 +608,12 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
             if (sharedPreferenceManager.isDateGestureEnabled()) {
 
                 if (sharedPreferenceManager.isGestureEnabled("date") && dateApp.first != null && dateApp.second != null) {
-                    launcherApps.startMainActivity(dateApp.first!!.componentName, launcherApps.profiles[dateApp.second!!], null, null)
+                    try {
+                        launcherApps.startMainActivity(dateApp.first!!.componentName, launcherApps.profiles[dateApp.second!!], null, null)
+                    } catch (e: Exception) {
+                        logger.e("MainActivity", "Failed to launch date gesture app", e)
+                        Toast.makeText(this@MainActivity, getString(R.string.launch_error), Toast.LENGTH_SHORT).show()
+                    }
                 } else {
                     try {
                         startActivity(
@@ -862,7 +891,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                 "alphabetIndexPosition" -> {
                     setAlphabetIndexPosition()
                 }
-                
+
                 "notificationDots" -> {
                     if (sharedPreferenceManager.isNotificationDotsEnabled()) {
                         if (!NotificationListener.isEnabled(this@MainActivity)) {
@@ -948,7 +977,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                     installedApps = updatedApps
                     currentFilteredApps = updatedApps
                     appSearchIndexDirty = true
-                    
+
                     if (sharedPreferenceManager.isAlphabetIndexEnabled()) {
                         refreshAlphabetIndex(currentFilteredApps)
                     }
@@ -1024,7 +1053,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
             }
 
             setupInternetSearch()
-            
+
             setupAlphabetIndex()
         }
     }
@@ -1040,7 +1069,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
             refreshAlphabetIndex(currentFilteredApps)
         }
     }
-    
+
     private fun refreshAlphabetIndex(apps: List<Triple<LauncherActivityInfo, UserHandle, Int>>) {
         val availableLetters = buildAlphabetIndexLetters(apps)
         alphabetIndex.post {
@@ -1074,11 +1103,11 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
         val firstChar = trimmed.first()
         return if (firstChar.isLetter()) firstChar.uppercaseChar().toString() else "#"
     }
-    
+
     private fun setAlphabetIndexPosition() {
         val position = sharedPreferenceManager.getAlphabetIndexPosition()
         val layoutParams = alphabetIndex.layoutParams as android.widget.FrameLayout.LayoutParams
-        
+
         when (position) {
             "left" -> {
                 layoutParams.gravity = android.view.Gravity.START
@@ -1089,10 +1118,10 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
         }
         alphabetIndex.layoutParams = layoutParams
     }
-    
+
     private fun scrollToLetter(letter: String, apps: List<Triple<LauncherActivityInfo, UserHandle, Int>>) {
         val targetLetter = if (letter == "#") null else letter
-        
+
         var targetPosition = -1
         for (i in apps.indices) {
             val app = apps[i]
@@ -1113,7 +1142,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                 break
             }
         }
-        
+
         if (targetPosition >= 0) {
             appRecycler.scrollToPosition(targetPosition)
         }
@@ -1398,7 +1427,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
         appMenuLinearLayoutManager.setScrollEnabled(true)
         appRecycler.layoutManager = appMenuLinearLayoutManager
     }
-    
+
     // On home key or swipe, return to home screen
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
@@ -1409,7 +1438,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
         if (binding.homeView.isVisible && event.action == KeyEvent.ACTION_DOWN) {
             val keyCode = event.keyCode
             val unicodeChar = event.unicodeChar
-            
+
             if (unicodeChar != 0 && !KeyEvent.isModifierKey(keyCode)) {
                 val char = unicodeChar.toChar()
                 if (char.isLetterOrDigit()) {
@@ -1426,10 +1455,10 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
         contactAdapter?.shortcutTextView = null
         menuTitle.visibility = View.GONE
         uiUtils.setWebSearchVisibility(internetSearch)
-        
+
         searchView.setText(char)
         searchView.setSelection(searchView.text?.length ?: 0)
-        
+
         toAppMenuWithKeyboard()
     }
 
@@ -1447,7 +1476,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
         }
         animations.showApps(binding.homeView, binding.appView)
         animations.backgroundIn(this@MainActivity)
-        
+
         searchView.requestFocus()
         val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
         imm.showSoftInput(searchView, InputMethodManager.SHOW_IMPLICIT)
@@ -1462,7 +1491,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
         searchJob?.cancel()
         logger.i("MainActivity", "MainActivity destroyed")
     }
-    
+
     private fun registerNotificationReceiver() {
         if (!isNotificationReceiverRegistered) {
             val filter = android.content.IntentFilter(NotificationListener.ACTION_NOTIFICATIONS_CHANGED)
@@ -1470,23 +1499,23 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
             isNotificationReceiverRegistered = true
         }
     }
-    
+
     private fun unregisterNotificationReceiver() {
         if (isNotificationReceiverRegistered) {
             LocalBroadcastManager.getInstance(this).unregisterReceiver(notificationReceiver)
             isNotificationReceiverRegistered = false
         }
     }
-    
+
     private val notificationReceiver = object : android.content.BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             updateNotificationDots()
         }
     }
-    
+
     private fun updateNotificationDots() {
         if (!sharedPreferenceManager.isNotificationDotsEnabled()) return
-        
+
         val notificationListener = NotificationListener.getInstance()
         if (notificationListener == null) {
             if (!NotificationListener.isEnabled(this)) {
@@ -1494,18 +1523,18 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
             }
             return
         }
-        
+
         val packagesWithNotifications = notificationListener.getPackagesWithNotifications()
         val shortcuts = arrayOf(
             R.id.app1, R.id.app2, R.id.app3, R.id.app4, R.id.app5,
             R.id.app6, R.id.app7, R.id.app8, R.id.app9, R.id.app10,
             R.id.app11, R.id.app12, R.id.app13, R.id.app14, R.id.app15
         )
-        
+
         for (i in shortcuts.indices) {
             val textView = findViewById<TextView>(shortcuts[i])
             val savedView = sharedPreferenceManager.getShortcut(i)
-            
+
             if (savedView != null && savedView.getOrNull(3)?.toBoolean() != true) {
                 val componentName = savedView[0]
                 if (componentName != "e") {
@@ -1514,14 +1543,14 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                     } else {
                         componentName
                     }
-                    
+
                     val hasNotification = packagesWithNotifications.contains(packageName)
                     val dotDrawable = if (hasNotification) {
                         ResourcesCompat.getDrawable(resources, R.drawable.notification_dot, null)
                     } else {
                         null
                     }
-                    
+
                     dotDrawable?.setTint(sharedPreferenceManager.getTextColor())
                     textView.setCompoundDrawablesRelativeWithIntrinsicBounds(
                         textView.compoundDrawablesRelative[0],
@@ -1533,7 +1562,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
             }
         }
     }
-    
+
     private fun requestNotificationPermission() {
         NotificationListener.requestPermission(this)
     }
@@ -1558,12 +1587,12 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
         }
         returnAllowed = true
         appAdapter?.notifyDataSetChanged()
-        
+
         updateNotificationDots()
-        
+
         updateDefaultLauncherBanner()
     }
-    
+
     private fun updateDefaultLauncherBanner() {
         val defaultLauncherBanner = findViewById<LinearLayout>(R.id.defaultLauncherBanner)
         if (!isDefaultLauncher()) {
@@ -1572,7 +1601,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
             defaultLauncherBanner?.visibility = View.GONE
         }
     }
-    
+
     private fun isDefaultLauncher(): Boolean {
         val packageManager = packageManager
         val intent = Intent(Intent.ACTION_MAIN).apply {

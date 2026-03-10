@@ -7,6 +7,9 @@ import android.content.pm.ApplicationInfo
 import android.content.pm.LauncherActivityInfo
 import android.content.pm.LauncherApps
 import android.os.UserHandle
+import android.os.Handler
+import android.os.Looper
+import android.widget.Toast
 import androidx.core.content.ContextCompat.getString
 import eu.ottop.yamlauncher.R
 import eu.ottop.yamlauncher.settings.SharedPreferenceManager
@@ -81,19 +84,24 @@ class AppUtils(private val context: Context, private val launcherApps: LauncherA
         profile: Int
     ): ApplicationInfo? {
         return try {
+            if (profile !in launcherApps.profiles.indices) {
+                return null
+            }
             launcherApps.getApplicationInfo(packageName, 0, launcherApps.profiles[profile])
         } catch (_: Exception) {
             null
         }
     }
 
-    private fun startApp(componentName: ComponentName, userHandle: UserHandle) {
-        try {
-            launcherApps.startMainActivity(componentName,  userHandle, null, null)
+    private fun startApp(componentName: ComponentName, userHandle: UserHandle): Boolean {
+        return try {
+            launcherApps.startMainActivity(componentName, userHandle, null, null)
             logger.i("AppUtils", "Launched app: ${componentName.packageName}")
+            true
         } catch (e: Exception) {
             logger.e("AppUtils", "Failed to launch app: ${componentName.packageName}", e)
-            throw e
+            showLaunchError()
+            false
         }
     }
 
@@ -120,4 +128,9 @@ class AppUtils(private val context: Context, private val launcherApps: LauncherA
         }.create().show()
     }
 
+    private fun showLaunchError() {
+        Handler(Looper.getMainLooper()).post {
+            Toast.makeText(context, getString(context, R.string.launch_error), Toast.LENGTH_SHORT).show()
+        }
+    }
 }

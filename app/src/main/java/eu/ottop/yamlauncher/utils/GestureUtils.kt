@@ -18,6 +18,7 @@ import eu.ottop.yamlauncher.settings.SharedPreferenceManager
 class GestureUtils(private val context: Context) {
 
     private val sharedPreferenceManager = SharedPreferenceManager(context)
+    private val logger = Logger.getInstance(context)
 
     fun getSwipeInfo(launcherApps: LauncherApps, direction: String): Pair<LauncherActivityInfo?, Int?> {
         val app = sharedPreferenceManager.getGestureInfo(direction)
@@ -25,13 +26,18 @@ class GestureUtils(private val context: Context) {
         if (app != null) {
             if (app.size >= 3) {
                 val componentName = ComponentName.unflattenFromString(app[1])
-                if (componentName != null) {
-                    return Pair(
-                        launcherApps.resolveActivity(
-                            Intent().setComponent(componentName), launcherApps.profiles[app[2]
-                                .toInt()]
-                        ), app[2].toInt()
-                    )
+                val profileIndex = app[2].toIntOrNull()
+                if (componentName != null && profileIndex != null && profileIndex in launcherApps.profiles.indices) {
+                    return try {
+                        Pair(
+                            launcherApps.resolveActivity(
+                                Intent().setComponent(componentName), launcherApps.profiles[profileIndex]
+                            ), profileIndex
+                        )
+                    } catch (e: Exception) {
+                        logger.e("GestureUtils", "Failed to resolve gesture app for $direction", e)
+                        Pair(null, null)
+                    }
                 }
             }
         }
