@@ -1,5 +1,5 @@
 <p align="center">
-<img src="https://codeberg.org/ThomasNowProductions/yamlauncher/raw/branch/main/metadata/en-US/images/featureGraphic.png" width=100%/>
+<img src="https://raw.githubusercontent.com/ThomasNowProductions/YAM-Launcher/refs/heads/main/metadata/en-US/images/featureGraphic.png" width=100%/>
 </p>
 
 # YAM Launcher
@@ -34,11 +34,11 @@ height="55">](https://apt.izzysoft.de/fdroid/index/apk/eu.ottop.yamlauncher)
 ### Google Play
 [<img src="https://github.com/user-attachments/assets/18e22711-eadc-4757-8b47-7588cfa9ab8d"
     alt="Get it on Google Play"
-    height="55">](https://play.google.com/store/apps/details?id=eu.ottop.yamlauncher&pcampaignid=web_share)
+    height="55">](https://play.google.com/store/apps/details?id=eu.ottop.yamlauncher)
 
 ### APK
 
-1. Download the [APK](https://codeberg.org/ThomasNowProductions/yamlauncher/releases).
+1. Download the [APK](https://github.com/ThomasNowProductions/YAM-Launcher/releases).
 2. Enable the permission to install apps for your browser/files (app you are installing the launcher from).
 3. Install the launcher.
 
@@ -55,26 +55,26 @@ To fix (only if you want to enable the double tap to lock feature):
 ## Screenshots
 
 <p align="center">
-<img src="https://codeberg.org/ThomasNowProductions/yamlauncher/raw/branch/main/metadata/en-US/images/phoneScreenshots/1.png"
+<img src="https://raw.githubusercontent.com/ThomasNowProductions/YAM-Launcher/refs/heads/main/metadata/en-US/images/phoneScreenshots/1.png"
     alt="Weather At Your Fingertips"
     width="19%">
-<img src="https://codeberg.org/ThomasNowProductions/yamlauncher/raw/branch/main/metadata/en-US/images/phoneScreenshots/2.png"
+<img src="https://raw.githubusercontent.com/ThomasNowProductions/YAM-Launcher/refs/heads/main/metadata/en-US/images/phoneScreenshots/2.png"
     alt="Absolute Minimalism"
     width="19%">
-<img src="https://codeberg.org/ThomasNowProductions/yamlauncher/raw/branch/main/metadata/en-US/images/phoneScreenshots/3.png"
+<img src="https://raw.githubusercontent.com/ThomasNowProductions/YAM-Launcher/refs/heads/main/metadata/en-US/images/phoneScreenshots/3.png"
     alt="Function Over Form"
     width="19%">
-<img src="https://codeberg.org/ThomasNowProductions/yamlauncher/raw/branch/main/metadata/en-US/images/phoneScreenshots/4.png"
+<img src="https://raw.githubusercontent.com/ThomasNowProductions/YAM-Launcher/refs/heads/main/metadata/en-US/images/phoneScreenshots/4.png"
     alt="Material You"
     width="19%">
-<img src="https://codeberg.org/ThomasNowProductions/yamlauncher/raw/branch/main/metadata/en-US/images/phoneScreenshots/5.png"
+<img src="https://raw.githubusercontent.com/ThomasNowProductions/YAM-Launcher/refs/heads/main/metadata/en-US/images/phoneScreenshots/5.png"
     alt="Make It Yours"
     width="19%">
 </p>
 
 ## Privacy
 
-[Privacy Policy](https://codeberg.org/ThomasNowProductions/yamlauncher/src/branch/main/PrivacyPolicy.md)
+[Privacy Policy](https://github.com/ThomasNowProductions/YAM-Launcher/blob/main/PrivacyPolicy.md)
 
 No data leaves your device by default and no data is sent to the developer, ever. 
 
@@ -96,6 +96,6 @@ You can optionally enable accessibility services for YAM Launcher if you choose 
 
 ## Mirrors
 
-[Codeberg (primary)](https://codeberg.org/ThomasNowProductions/yamlauncher)
+[GitHub (main)](https://github.com/ThomasNowProductions/YAM-Launcher/)
 
-[GitHub (secondary)](https://github.com/ThomasNowProductions/yam_launcher)
+[Codeberg (secondary](https://codeberg.org/ThomasNowProductions/YAM-Launcher)
