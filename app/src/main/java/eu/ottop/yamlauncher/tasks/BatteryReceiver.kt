@@ -7,18 +7,31 @@ import android.content.IntentFilter
 import android.os.BatteryManager
 import eu.ottop.yamlauncher.MainActivity
 import eu.ottop.yamlauncher.utils.Logger
+import java.lang.ref.WeakReference
 
-class BatteryReceiver(private val activity: MainActivity) : BroadcastReceiver() {
+class BatteryReceiver(activity: MainActivity) : BroadcastReceiver() {
 
-    private val logger = Logger.getInstance(activity)
+    private val logger: Logger
+    private val activityRef: WeakReference<MainActivity>
+
+    init {
+        logger = Logger.getInstance(activity)
+        activityRef = WeakReference(activity)
+    }
 
     override fun onReceive(context: Context?, intent: Intent?) {
+        val activity = activityRef.get()
+        if (activity == null) {
+            logger.w("BatteryReceiver", "Activity is null, skipping battery update")
+            return
+        }
+
         intent?.let {
             val level = it.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
             val scale = it.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
             if (level != -1 && scale != -1) {
                 val batteryPct = level * 100 / scale.toFloat()
-                activity.modifyDate("${batteryPct.toInt()}%", 3) // Add battery to the date
+                activity.modifyDate("${batteryPct.toInt()}%", 3)
             } else {
                 logger.w("BatteryReceiver", "Failed to get battery level")
             }

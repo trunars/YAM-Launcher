@@ -58,12 +58,15 @@ class ContactsAdapter(
 
         init {
             textView.setOnClickListener {
+                val position = bindingAdapterPosition
+                if (position == RecyclerView.NO_POSITION || position >= contacts.size) {
+                    return@setOnClickListener
+                }
+                
                 if (shortcutTextView != null) {
-                    val position = bindingAdapterPosition
                     val contact = contacts[position]
                     contactShortcutListener.onContactShortcut(contact.second, contact.first, shortcutTextView!!, shortcutIndex)
                 } else {
-                    val position = bindingAdapterPosition
                     val contact = contacts[position]
                     contactClickListener.onContactClick(contact.second)
                 }

@@ -23,10 +23,14 @@ class GestureUtils(private val context: Context) {
     fun getSwipeInfo(launcherApps: LauncherApps, direction: String): Pair<LauncherActivityInfo?, Int?> {
         val app = sharedPreferenceManager.getGestureInfo(direction)
 
-        if (app != null) {
-            if (app.size >= 3) {
-                val componentName = ComponentName.unflattenFromString(app[1])
-                val profileIndex = app[2].toIntOrNull()
+        if (app != null && app.size >= 3) {
+            try {
+                val componentNameStr = app.getOrNull(1) ?: return Pair(null, null)
+                if (componentNameStr.isEmpty()) return Pair(null, null)
+                
+                val componentName = ComponentName.unflattenFromString(componentNameStr)
+                val profileIndex = app.getOrNull(2)?.toIntOrNull()
+                
                 if (componentName != null && profileIndex != null && profileIndex in launcherApps.profiles.indices) {
                     return try {
                         Pair(
@@ -36,9 +40,11 @@ class GestureUtils(private val context: Context) {
                         )
                     } catch (e: Exception) {
                         logger.e("GestureUtils", "Failed to resolve gesture app for $direction", e)
-                        Pair(null, null)
+                        return Pair(null, null)
                     }
                 }
+            } catch (e: Exception) {
+                logger.e("GestureUtils", "Error parsing gesture info for $direction", e)
             }
         }
         return Pair(null, null)

@@ -91,6 +91,14 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
     AppMenuAdapter.OnShortcutListener, AppMenuAdapter.OnItemLongClickListener, ContactsAdapter.OnContactClickListener,
     ContactsAdapter.OnContactShortcutListener, AppActionBottomSheet.AppActionListener {
 
+    companion object {
+        private val SHORTCUT_IDS = listOf(
+            R.id.app1, R.id.app2, R.id.app3, R.id.app4, R.id.app5,
+            R.id.app6, R.id.app7, R.id.app8, R.id.app9, R.id.app10,
+            R.id.app11, R.id.app12, R.id.app13, R.id.app14, R.id.app15
+        )
+    }
+
     private lateinit var weatherSystem: WeatherSystem
     private lateinit var appUtils: AppUtils
     private lateinit var biometricUtils: BiometricUtils
@@ -267,41 +275,21 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
     }
 
     private fun setShortcuts() {
-        val shortcuts = arrayOf(
-            R.id.app1,
-            R.id.app2,
-            R.id.app3,
-            R.id.app4,
-            R.id.app5,
-            R.id.app6,
-            R.id.app7,
-            R.id.app8,
-            R.id.app9,
-            R.id.app10,
-            R.id.app11,
-            R.id.app12,
-            R.id.app13,
-            R.id.app14,
-            R.id.app15
-        )
+        val shortcutNo = sharedPreferenceManager.getShortcutNumber()
 
-        for (i in shortcuts.indices) {
+        SHORTCUT_IDS.forEachIndexed { index, shortcutId ->
+            val textView = findViewById<TextView>(shortcutId)
 
-            val textView = findViewById<TextView>(shortcuts[i])
-            val shortcutNo = sharedPreferenceManager.getShortcutNumber()
-
-            // Only show the chosen number of shortcuts (default 4). Hide the rest.
-            if (i >= shortcutNo!!) {
+            if (index >= shortcutNo!!) {
                 textView.visibility = View.GONE
             } else {
                 textView.visibility = View.VISIBLE
 
-                val savedView = sharedPreferenceManager.getShortcut(i)
+                val savedView = sharedPreferenceManager.getShortcut(index)
 
-                // Set the non-work profile drawable by default
                 textView.setCompoundDrawablesWithIntrinsicBounds(ResourcesCompat.getDrawable(resources, R.drawable.ic_empty, null), null, null, null)
 
-                shortcutListeners(i, textView, savedView)
+                shortcutListeners(index, textView, savedView)
 
                 if (savedView?.get(1) != "e") {
                     setShortcutSetup(textView, savedView)
@@ -418,13 +406,18 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
 
         try {
             // The menu opens from the top
-            appRecycler.scrollToPosition(0)
-            menuView.displayedChild = 0
-            if (searchSwitcher.isVisible) {
+            if (::appRecycler.isInitialized) {
+                appRecycler.scrollToPosition(0)
+            }
+            if (::menuView.isInitialized) {
+                menuView.displayedChild = 0
+            }
+            if (::searchSwitcher.isInitialized && searchSwitcher.isVisible && ::contactRecycler.isInitialized) {
                 contactRecycler.scrollToPosition(0)
                 setAppViewDetails()
             }
-        } catch (_: UninitializedPropertyAccessException) {
+        } catch (e: Exception) {
+            logger.w("MainActivity", "Error in toAppMenu: ${e.message}")
         }
         animations.showApps(binding.homeView, binding.appView)
         animations.backgroundIn(this@MainActivity)
@@ -451,64 +444,82 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
     }
 
     private fun setShortcutSetup(textView: TextView, savedView: List<String>?) {
-        // Set the work profile drawable for work profile apps
         textView.text = savedView?.get(2)
-        if (savedView != null && (savedView.getOrNull(3)?.toBoolean() == true)) {
+        
+        if (savedView?.getOrNull(3)?.toBoolean() == true) {
             setShortcutContactListeners(textView, savedView[1].toInt())
             return
         }
+        
         if (savedView?.get(1) != "0") {
             textView.setCompoundDrawablesWithIntrinsicBounds(ResourcesCompat.getDrawable(resources, R.drawable.ic_work_app, null), null, null, null)
         }
-
+        
         setShortcutListeners(textView, savedView)
     }
 
     private fun setShortcutListeners(textView: TextView, savedView: List<String>?) {
         textView.setOnClickListener {
             if (savedView != null && canLaunchShortcut) {
-                val profileIndex = savedView.getOrNull(1)?.toIntOrNull()
-                if (profileIndex == null || profileIndex !in launcherApps.profiles.indices) {
-                    logger.w("MainActivity", "Failed to launch shortcut: invalid profile index")
-                    Toast.makeText(this, this.getString(R.string.launch_error), Toast.LENGTH_SHORT).show()
-                    return@setOnClickListener
-                }
-                val userHandle = launcherApps.profiles[profileIndex]
-                val componentString = savedView.getOrNull(0)
-                if (componentString.isNullOrEmpty()) {
-                    logger.w("MainActivity", "Failed to launch shortcut: empty component")
-                    Toast.makeText(this, this.getString(R.string.launch_error), Toast.LENGTH_SHORT).show()
-                    return@setOnClickListener
-                }
-                val componentName = if (componentString.contains("/")) {
-                    val parts = componentString.split("/", limit = 2)
-                    if (parts.size != 2) {
-                        logger.w("MainActivity", "Failed to launch shortcut: invalid component $componentString")
-                        Toast.makeText(this, this.getString(R.string.launch_error), Toast.LENGTH_SHORT).show()
-                        return@setOnClickListener
-                    }
-                    val packageName = parts[0]
-                    val className = parts[1]
-                    val cn = ComponentName(packageName, className)
-                    if (launcherApps.getActivityList(packageName, userHandle).none { it.componentName == cn }) {
-                        logger.w("MainActivity", "Failed to launch shortcut: $componentString not found")
-                        Toast.makeText(this, this.getString(R.string.launch_error), Toast.LENGTH_SHORT).show()
-                        return@setOnClickListener
-                    }
-                    cn
-                } else {
-                    val mainActivity = launcherApps.getActivityList(componentString, userHandle).firstOrNull()
-                    if (mainActivity != null) {
-                        mainActivity.componentName
-                    } else {
-                        logger.w("MainActivity", "Failed to launch shortcut: $componentString not found")
-                        Toast.makeText(this, this.getString(R.string.launch_error), Toast.LENGTH_SHORT).show()
-                        return@setOnClickListener
-                    }
-                }
-                appUtils.launchApp(componentName, userHandle)
+                val profileIndex = validateProfileIndex(savedView) ?: return@setOnClickListener
+                val componentName = resolveComponentName(savedView, profileIndex) ?: return@setOnClickListener
+                appUtils.launchApp(componentName, launcherApps.profiles[profileIndex])
             }
         }
+    }
+
+    private fun validateProfileIndex(savedView: List<String>): Int? {
+        val profileIndex = savedView.getOrNull(1)?.toIntOrNull()
+        if (profileIndex == null || profileIndex !in launcherApps.profiles.indices) {
+            logger.w("MainActivity", "Failed to launch shortcut: invalid profile index")
+            Toast.makeText(this, getString(R.string.launch_error), Toast.LENGTH_SHORT).show()
+            return null
+        }
+        return profileIndex
+    }
+
+    private fun resolveComponentName(savedView: List<String>, profileIndex: Int): ComponentName? {
+        val userHandle = launcherApps.profiles[profileIndex]
+        val componentString = savedView.getOrNull(0)
+        
+        if (componentString.isNullOrEmpty()) {
+            logger.w("MainActivity", "Failed to launch shortcut: empty component")
+            Toast.makeText(this, getString(R.string.launch_error), Toast.LENGTH_SHORT).show()
+            return null
+        }
+        
+        return if (componentString.contains("/")) {
+            parseExplicitComponent(componentString, userHandle)
+        } else {
+            resolveMainActivity(componentString, userHandle)
+        }
+    }
+
+    private fun parseExplicitComponent(componentString: String, userHandle: UserHandle): ComponentName? {
+        val parts = componentString.split("/", limit = 2)
+        if (parts.size != 2) {
+            logger.w("MainActivity", "Failed to launch shortcut: invalid component $componentString")
+            Toast.makeText(this, getString(R.string.launch_error), Toast.LENGTH_SHORT).show()
+            return null
+        }
+        
+        val cn = ComponentName(parts[0], parts[1])
+        if (launcherApps.getActivityList(parts[0], userHandle).none { it.componentName == cn }) {
+            logger.w("MainActivity", "Failed to launch shortcut: $componentString not found")
+            Toast.makeText(this, getString(R.string.launch_error), Toast.LENGTH_SHORT).show()
+            return null
+        }
+        return cn
+    }
+
+    private fun resolveMainActivity(componentString: String, userHandle: UserHandle): ComponentName? {
+        val mainActivity = launcherApps.getActivityList(componentString, userHandle).firstOrNull()
+        if (mainActivity != null) {
+            return mainActivity.componentName
+        }
+        logger.w("MainActivity", "Failed to launch shortcut: $componentString not found")
+        Toast.makeText(this, getString(R.string.launch_error), Toast.LENGTH_SHORT).show()
+        return null
     }
 
     private fun setShortcutContactListeners(textView: TextView, contactId: Int) {
@@ -688,15 +699,25 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
 
     private fun registerBatteryReceiver() {
         if (!isBatteryReceiverRegistered) {
-            batteryReceiver = BatteryReceiver.register(this, this@MainActivity)
-            isBatteryReceiverRegistered = true
+            try {
+                batteryReceiver = BatteryReceiver.register(this, this@MainActivity)
+                isBatteryReceiverRegistered = true
+            } catch (e: Exception) {
+                logger.w("MainActivity", "Failed to register battery receiver: ${e.message}")
+            }
         }
     }
 
     private fun unregisterBatteryReceiver() {
-        if (isBatteryReceiverRegistered) {
-            unregisterReceiver(batteryReceiver)
-            isBatteryReceiverRegistered = false
+        if (isBatteryReceiverRegistered && batteryReceiver != null) {
+            try {
+                unregisterReceiver(batteryReceiver)
+            } catch (e: Exception) {
+                logger.w("MainActivity", "Failed to unregister battery receiver: ${e.message}")
+            } finally {
+                batteryReceiver = null
+                isBatteryReceiverRegistered = false
+            }
         }
     }
 
@@ -711,198 +732,106 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
     // Only reload items that have had preferences changed
     @SuppressLint("UseKtx")
     override fun onSharedPreferenceChanged(preferences: SharedPreferences?, key: String?) {
-        if (preferences != null) {
-            when (key) {
-                "bgColor" -> {
-                    uiUtils.setBackground(window)
-                }
+        if (preferences == null || key == null) return
 
-                "textColor" -> {
-                    uiUtils.setTextColors(binding.homeView)
-                    uiUtils.setStatusBarColor(window)
-                    uiUtils.setMenuItemColors(searchView)
-                    uiUtils.setMenuItemColors(menuTitle, "A9")
-                    uiUtils.setImageColor(searchSwitcher)
-                    uiUtils.setImageColor(internetSearch)
-                    if (sharedPreferenceManager.isAlphabetIndexEnabled()) {
-                        alphabetIndex.setTextColor(sharedPreferenceManager.getTextColor())
-                    }
-                }
+        when (key) {
+            "bgColor" -> uiUtils.setBackground(window)
 
-                "textFont" -> {
-                    uiUtils.setTextFont(binding.homeView)
-                    uiUtils.setFont(searchView)
-                    uiUtils.setFont(menuTitle)
+            "textColor" -> {
+                uiUtils.setTextColors(binding.homeView)
+                uiUtils.setStatusBarColor(window)
+                uiUtils.setMenuItemColors(searchView)
+                uiUtils.setMenuItemColors(menuTitle, "A9")
+                uiUtils.setImageColor(searchSwitcher)
+                uiUtils.setImageColor(internetSearch)
+                if (sharedPreferenceManager.isAlphabetIndexEnabled()) {
+                    alphabetIndex.setTextColor(sharedPreferenceManager.getTextColor())
                 }
+            }
 
-                "textStyle" -> {
-                    uiUtils.setTextFont(binding.homeView)
-                    uiUtils.setFont(searchView)
-                    uiUtils.setFont(menuTitle)
+            "textShadow" -> {
+                uiUtils.setTextColors(binding.homeView)
+                uiUtils.setMenuItemColors(searchView)
+                uiUtils.setMenuItemColors(menuTitle, "A9")
+                uiUtils.setImageColor(searchSwitcher)
+                uiUtils.setImageColor(internetSearch)
+            }
+
+            "textFont", "textStyle" -> {
+                uiUtils.setTextFont(binding.homeView)
+                uiUtils.setFont(searchView)
+                uiUtils.setFont(menuTitle)
+            }
+
+            "clockEnabled" -> uiUtils.setClockVisibility(clock)
+            "dateEnabled" -> uiUtils.setDateVisibility(dateText)
+            "searchEnabled" -> uiUtils.setSearchVisibility(searchView, binding.searchLayout, binding.searchReplacement)
+            "barVisibility" -> uiUtils.setStatusBar(window)
+
+            "clockAlignment" -> uiUtils.setClockAlignment(clock, dateText)
+            "shortcutAlignment" -> uiUtils.setShortcutsAlignment(binding.homeView)
+            "shortcutVAlignment" -> uiUtils.setShortcutsVAlignment(binding.topSpace, binding.bottomSpace)
+            "searchAlignment" -> uiUtils.setSearchAlignment(searchView)
+
+            "clockSize" -> uiUtils.setClockSize(clock)
+            "dateSize" -> uiUtils.setDateSize(dateText)
+            "shortcutSize" -> uiUtils.setShortcutsSize(binding.homeView)
+            "searchSize" -> uiUtils.setSearchSize(searchView)
+            "shortcutWeight" -> uiUtils.setShortcutsSpacing(binding.homeView)
+
+            "clockSwipe", "clockSwipeApp" -> clockApp = gestureUtils.getSwipeInfo(launcherApps, "clock")
+            "dateSwipe", "dateSwipeApp" -> dateApp = gestureUtils.getSwipeInfo(launcherApps, "date")
+            "leftSwipe", "leftSwipeApp" -> leftSwipeActivity = gestureUtils.getSwipeInfo(launcherApps, "left")
+            "rightSwipe", "rightSwipeApp" -> rightSwipeActivity = gestureUtils.getSwipeInfo(launcherApps, "right")
+            "doubleTapAction", "doubleTapSwipeApp" -> doubleTapApp = gestureUtils.getSwipeInfo(launcherApps, "doubleTap")
+
+            "batteryEnabled" -> {
+                if (sharedPreferenceManager.isBatteryEnabled()) {
+                    registerBatteryReceiver()
+                } else {
+                    unregisterBatteryReceiver()
+                    modifyDate("", 3)
                 }
+            }
 
-                "textShadow" -> {
-                    uiUtils.setTextColors(binding.homeView)
-                    uiUtils.setMenuItemColors(searchView)
-                    uiUtils.setMenuItemColors(menuTitle, "A9")
-                    uiUtils.setImageColor(searchSwitcher)
-                    uiUtils.setImageColor(internetSearch)
+            "shortcutNo", "lockShortcuts" -> setShortcuts()
+            "swipeThreshold" -> swipeThreshold = sharedPreferenceManager.getSwipeThreshold()
+            "swipeVelocity" -> swipeVelocityThreshold = sharedPreferenceManager.getSwipeVelocity()
+
+            "isRestored" -> {
+                preferences.edit { remove("isRestored") }
+                setPreferences()
+                setShortcuts()
+            }
+
+            "contactsEnabled" -> {
+                try {
+                    contactRecycler
+                } catch (_: UninitializedPropertyAccessException) {
+                    setupContactRecycler()
                 }
+            }
 
-                "clockEnabled" -> {
-                    uiUtils.setClockVisibility(clock)
+            "alphabetIndexEnabled" -> {
+                setAlphabetIndexPosition()
+                if (sharedPreferenceManager.isAlphabetIndexEnabled()) {
+                    setupAlphabetIndex()
+                } else {
+                    alphabetIndex.visibility = View.GONE
                 }
+            }
 
-                "dateEnabled" -> {
-                    uiUtils.setDateVisibility(dateText)
-                }
+            "alphabetIndexPosition" -> setAlphabetIndexPosition()
 
-                "searchEnabled" -> {
-                    uiUtils.setSearchVisibility(searchView, binding.searchLayout, binding.searchReplacement)
-                }
-
-                "contactsEnabled" -> {
-                    try {
-                        contactRecycler
-                    } catch (_: UninitializedPropertyAccessException) {
-                        setupContactRecycler()
-                    }
-                }
-
-                "clockAlignment" -> {
-                    uiUtils.setClockAlignment(clock, dateText)
-                }
-
-                "shortcutAlignment" -> {
-                    uiUtils.setShortcutsAlignment(binding.homeView)
-                }
-
-                "shortcutVAlignment" -> {
-                    uiUtils.setShortcutsVAlignment(binding.topSpace, binding.bottomSpace)
-                }
-
-                "searchAlignment" -> {
-                    uiUtils.setSearchAlignment(searchView)
-                }
-
-                "clockSize" -> {
-                    uiUtils.setClockSize(clock)
-                }
-
-                "dateSize" -> {
-                    uiUtils.setDateSize(dateText)
-                }
-
-                "shortcutSize" -> {
-                    uiUtils.setShortcutsSize(binding.homeView)
-                }
-
-                "searchSize" -> {
-                    uiUtils.setSearchSize(searchView)
-                }
-
-                "shortcutWeight" -> {
-                    uiUtils.setShortcutsSpacing(binding.homeView)
-                }
-
-                "barVisibility" -> {
-                    uiUtils.setStatusBar(window)
-                }
-
-                "clockSwipe" -> {
-                    clockApp = gestureUtils.getSwipeInfo(launcherApps, "clock")
-                }
-
-                "dateSwipe" -> {
-                    dateApp = gestureUtils.getSwipeInfo(launcherApps, "date")
-                }
-
-                "clockSwipeApp" -> {
-                    clockApp = gestureUtils.getSwipeInfo(launcherApps, "clock")
-                }
-
-                "dateSwipeApp" -> {
-                    dateApp = gestureUtils.getSwipeInfo(launcherApps, "date")
-                }
-
-                "leftSwipe" -> {
-                    leftSwipeActivity = gestureUtils.getSwipeInfo(launcherApps, "left")
-                }
-
-                "rightSwipe" -> {
-                    rightSwipeActivity = gestureUtils.getSwipeInfo(launcherApps, "right")
-                }
-
-                "leftSwipeApp" -> {
-                    leftSwipeActivity = gestureUtils.getSwipeInfo(launcherApps, "left")
-                }
-
-                "rightSwipeApp" -> {
-                    rightSwipeActivity = gestureUtils.getSwipeInfo(launcherApps, "right")
-                }
-
-                "doubleTapAction" -> {
-                    doubleTapApp = gestureUtils.getSwipeInfo(launcherApps, "doubleTap")
-                }
-
-                "doubleTapSwipeApp" -> {
-                    doubleTapApp = gestureUtils.getSwipeInfo(launcherApps, "doubleTap")
-                }
-
-                "batteryEnabled" -> {
-                    if (sharedPreferenceManager.isBatteryEnabled()) {
-                        registerBatteryReceiver()
+            "notificationDots" -> {
+                if (sharedPreferenceManager.isNotificationDotsEnabled()) {
+                    if (!NotificationListener.isEnabled(this@MainActivity)) {
+                        NotificationListener.requestPermission(this@MainActivity)
                     } else {
-                        unregisterBatteryReceiver()
-                        modifyDate("", 3)
+                        updateNotificationDots()
                     }
-                }
-
-                "shortcutNo" -> {
+                } else {
                     setShortcuts()
-                }
-
-                "swipeThreshold" -> {
-                    swipeThreshold = sharedPreferenceManager.getSwipeThreshold()
-                }
-
-                "swipeVelocity" -> {
-                    swipeVelocityThreshold = sharedPreferenceManager.getSwipeVelocity()
-                }
-
-                "isRestored" -> {
-                    preferences.edit { remove("isRestored") }
-                    setPreferences()
-                    setShortcuts()
-                }
-
-                "lockShortcuts" -> {
-                    setShortcuts()
-                }
-
-                "alphabetIndexEnabled" -> {
-                    setAlphabetIndexPosition()
-                    if (sharedPreferenceManager.isAlphabetIndexEnabled()) {
-                        setupAlphabetIndex()
-                    } else {
-                        alphabetIndex.visibility = View.GONE
-                    }
-                }
-
-                "alphabetIndexPosition" -> {
-                    setAlphabetIndexPosition()
-                }
-
-                "notificationDots" -> {
-                    if (sharedPreferenceManager.isNotificationDotsEnabled()) {
-                        if (!NotificationListener.isEnabled(this@MainActivity)) {
-                            NotificationListener.requestPermission(this@MainActivity)
-                        } else {
-                            updateNotificationDots()
-                        }
-                    } else {
-                        setShortcuts()
-                    }
                 }
             }
         }
@@ -954,7 +883,8 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                     updateMenu(installedApps)
                     refreshAppMenu()
                 }
-            } catch (_: UninitializedPropertyAccessException) {
+            } catch (e: Exception) {
+                logger.w("MainActivity", "Error in backToHome handler: ${e.message}")
             }
         }, animSpeed)
     }
@@ -967,7 +897,6 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
 
     suspend fun refreshAppMenu() {
         try {
-
             // Don't reset app menu while under a search
             if (!isSearchActive) {
                 val updatedApps = appUtils.getInstalledApps(showHidden)
@@ -979,12 +908,13 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                     currentFilteredApps = updatedApps
                     appSearchIndexDirty = true
 
-                    if (sharedPreferenceManager.isAlphabetIndexEnabled()) {
+                    if (::alphabetIndex.isInitialized && sharedPreferenceManager.isAlphabetIndexEnabled()) {
                         refreshAlphabetIndex(currentFilteredApps)
                     }
                 }
             }
-        } catch (_: UninitializedPropertyAccessException) {
+        } catch (e: Exception) {
+            logger.w("MainActivity", "Error in refreshAppMenu: ${e.message}")
         }
     }
 
@@ -1255,34 +1185,40 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
     private fun getContacts(filterString: String): MutableList<Pair<String, Int>> {
         val contacts = mutableListOf<Pair<String, Int>>()
 
-        val contentResolver: ContentResolver = contentResolver
+        try {
+            val contentResolver: ContentResolver = contentResolver
 
-        val projection = arrayOf(
-            ContactsContract.Contacts._ID,
-            ContactsContract.Contacts.DISPLAY_NAME
-        )
+            val projection = arrayOf(
+                ContactsContract.Contacts._ID,
+                ContactsContract.Contacts.DISPLAY_NAME
+            )
 
-        val selection = "${ContactsContract.Contacts.DISPLAY_NAME} LIKE ?"
-        val selectionArgs = arrayOf("%$filterString%")
+            val selection = "${ContactsContract.Contacts.DISPLAY_NAME} LIKE ?"
+            val selectionArgs = arrayOf("%$filterString%")
 
-        val cursor: Cursor? = contentResolver.query(
-            ContactsContract.Contacts.CONTENT_URI,
-            projection,
-            selection,
-            selectionArgs,
-            "${ContactsContract.Contacts.DISPLAY_NAME} ASC"
-        )
+            val cursor: Cursor? = contentResolver.query(
+                ContactsContract.Contacts.CONTENT_URI,
+                projection,
+                selection,
+                selectionArgs,
+                "${ContactsContract.Contacts.DISPLAY_NAME} ASC"
+            )
 
-        cursor?.use {
-            val nameIndex = it.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME)
-            val idIndex = it.getColumnIndex(ContactsContract.Contacts._ID)
-            while (it.moveToNext()) {
-                val name = it.getStringOrNull(nameIndex)
-                val id = it.getStringOrNull(idIndex)?.toInt()
-                if (name != null && id != null) {
-                    contacts.add(Pair(name, id))
+            cursor?.use {
+                val nameIndex = it.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME)
+                val idIndex = it.getColumnIndex(ContactsContract.Contacts._ID)
+                while (it.moveToNext()) {
+                    val name = it.getStringOrNull(nameIndex)
+                    val id = it.getStringOrNull(idIndex)?.toInt()
+                    if (name != null && id != null) {
+                        contacts.add(Pair(name, id))
+                    }
                 }
             }
+        } catch (e: SecurityException) {
+            logger.w("MainActivity", "Permission denied for contacts: ${e.message}")
+        } catch (e: Exception) {
+            logger.e("MainActivity", "Error getting contacts", e)
         }
         return contacts
     }
@@ -1474,13 +1410,18 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
         uiUtils.setContactsVisibility(searchSwitcher, binding.searchLayout, binding.searchReplacement)
 
         try {
-            appRecycler.scrollToPosition(0)
-            menuView.displayedChild = 0
-            if (searchSwitcher.isVisible) {
+            if (::appRecycler.isInitialized) {
+                appRecycler.scrollToPosition(0)
+            }
+            if (::menuView.isInitialized) {
+                menuView.displayedChild = 0
+            }
+            if (::searchSwitcher.isInitialized && searchSwitcher.isVisible && ::contactRecycler.isInitialized) {
                 contactRecycler.scrollToPosition(0)
                 setAppViewDetails()
             }
-        } catch (_: UninitializedPropertyAccessException) {
+        } catch (e: Exception) {
+            logger.w("MainActivity", "Error in toAppMenuWithKeyboard: ${e.message}")
         }
         animations.showApps(binding.homeView, binding.appView)
         animations.backgroundIn(this@MainActivity)
@@ -1493,25 +1434,38 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
     override fun onDestroy() {
         super.onDestroy()
 
-        unregisterBatteryReceiver()
-        unregisterNotificationReceiver()
-        preferences.unregisterOnSharedPreferenceChangeListener(this)
-        searchJob?.cancel()
+        try {
+            unregisterBatteryReceiver()
+            unregisterNotificationReceiver()
+            preferences.unregisterOnSharedPreferenceChangeListener(this)
+            searchJob?.cancel()
+        } catch (e: Exception) {
+            logger.w("MainActivity", "Error during onDestroy cleanup: ${e.message}")
+        }
         logger.i("MainActivity", "MainActivity destroyed")
     }
 
     private fun registerNotificationReceiver() {
         if (!isNotificationReceiverRegistered) {
-            val filter = android.content.IntentFilter(NotificationListener.ACTION_NOTIFICATIONS_CHANGED)
-            LocalBroadcastManager.getInstance(this).registerReceiver(notificationReceiver, filter)
-            isNotificationReceiverRegistered = true
+            try {
+                val filter = android.content.IntentFilter(NotificationListener.ACTION_NOTIFICATIONS_CHANGED)
+                LocalBroadcastManager.getInstance(this).registerReceiver(notificationReceiver, filter)
+                isNotificationReceiverRegistered = true
+            } catch (e: Exception) {
+                logger.w("MainActivity", "Failed to register notification receiver: ${e.message}")
+            }
         }
     }
 
     private fun unregisterNotificationReceiver() {
         if (isNotificationReceiverRegistered) {
-            LocalBroadcastManager.getInstance(this).unregisterReceiver(notificationReceiver)
-            isNotificationReceiverRegistered = false
+            try {
+                LocalBroadcastManager.getInstance(this).unregisterReceiver(notificationReceiver)
+                isNotificationReceiverRegistered = false
+            } catch (e: Exception) {
+                logger.w("MainActivity", "Failed to unregister notification receiver: ${e.message}")
+                isNotificationReceiverRegistered = false
+            }
         }
     }
 

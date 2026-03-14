@@ -488,74 +488,41 @@ class UIUtils(private val context: Context) {
 
     private fun setShortcutSize(shortcut: TextView, size: String?) {
         try {
+            val sizeConfig = getShortcutSizeConfig(size)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                when (size) {
-                    "tiny" -> {
-                        shortcut.setAutoSizeTextTypeUniformWithConfiguration(
-                            5,   // Min text size in SP
-                            20,   // Max text size in SP
-                            2,    // Step granularity in SP
-                            TypedValue.COMPLEX_UNIT_SP // Unit of measurement
-                        )
-                    }
-
-                    "small" -> {
-                        shortcut.setAutoSizeTextTypeUniformWithConfiguration(
-                            5,   // Min text size in SP
-                            24,   // Max text size in SP
-                            2,    // Step granularity in SP
-                            TypedValue.COMPLEX_UNIT_SP // Unit of measurement
-                        )
-                    }
-
-                    "medium" -> {
-                        shortcut.setAutoSizeTextTypeUniformWithConfiguration(
-                            5,   // Min text size in SP
-                            28,   // Max text size in SP
-                            2,    // Step granularity in SP
-                            TypedValue.COMPLEX_UNIT_SP // Unit of measurement
-                        )
-                    }
-
-                    "large" -> {
-                        shortcut.setAutoSizeTextTypeUniformWithConfiguration(
-                            5,   // Min text size in SP
-                            32,   // Max text size in SP
-                            2,    // Step granularity in SP
-                            TypedValue.COMPLEX_UNIT_SP // Unit of measurement
-                        )
-                    }
-
-                    "extra" -> {
-                        shortcut.setAutoSizeTextTypeUniformWithConfiguration(
-                            5,   // Min text size in SP
-                            36,   // Max text size in SP
-                            2,    // Step granularity in SP
-                            TypedValue.COMPLEX_UNIT_SP // Unit of measurement
-                        )
-                    }
-
-                    "huge" -> {
-                        shortcut.setAutoSizeTextTypeUniformWithConfiguration(
-                            5,   // Min text size in SP
-                            40,   // Max text size in SP
-                            2,    // Step granularity in SP
-                            TypedValue.COMPLEX_UNIT_SP // Unit of measurement
-                        )
-                    }
-                }
+                shortcut.setAutoSizeTextTypeUniformWithConfiguration(
+                    5,
+                    sizeConfig.first,
+                    2,
+                    TypedValue.COMPLEX_UNIT_SP
+                )
             } else {
-                // Fallback for API < 26: use fixed text size
-                when (size) {
-                    "tiny" -> shortcut.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
-                    "small" -> shortcut.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18f)
-                    "medium" -> shortcut.setTextSize(TypedValue.COMPLEX_UNIT_SP, 22f)
-                    "large" -> shortcut.setTextSize(TypedValue.COMPLEX_UNIT_SP, 26f)
-                    "extra" -> shortcut.setTextSize(TypedValue.COMPLEX_UNIT_SP, 30f)
-                    "huge" -> shortcut.setTextSize(TypedValue.COMPLEX_UNIT_SP, 34f)
-                }
+                shortcut.setTextSize(TypedValue.COMPLEX_UNIT_SP, sizeConfig.second)
             }
         } catch(_: Exception) {}
+    }
+
+    private fun getShortcutSizeConfig(size: String?): Pair<Int, Float> {
+        val autoSizeMax = mapOf(
+            "tiny" to 20,
+            "small" to 24,
+            "medium" to 28,
+            "large" to 32,
+            "extra" to 36,
+            "huge" to 40
+        )
+        val fallbackSize = mapOf(
+            "tiny" to 14f,
+            "small" to 18f,
+            "medium" to 22f,
+            "large" to 26f,
+            "extra" to 30f,
+            "huge" to 34f
+        )
+        return Pair(
+            autoSizeMax[size] ?: 20,
+            fallbackSize[size] ?: 14f
+        )
     }
 
     fun setAppSize(
@@ -583,23 +550,8 @@ class UIUtils(private val context: Context) {
 
     private fun setTextSize(view: TextView, size: String?, t: Float, s: Float, m: Float, l: Float, x: Float, h: Float) {
         try {
-            view.textSize = when (size) {
-                "tiny" -> t
-
-                "small" -> s
-
-                "medium" -> m
-
-                "large" -> l
-
-                "extra" -> x
-
-                "huge" -> h
-
-                else -> {
-                    0F
-                }
-            }
+            val sizeMap = mapOf("tiny" to t, "small" to s, "medium" to m, "large" to l, "extra" to x, "huge" to h)
+            view.textSize = sizeMap[size] ?: 0F
         } catch (_: Exception) {}
     }
 

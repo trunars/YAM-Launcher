@@ -63,18 +63,26 @@ class NotificationListener : NotificationListenerService() {
 
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
         super.onNotificationPosted(sbn)
-        sbn?.let {
-            logger.d("NotificationListener", "Notification posted from: ${it.packageName}")
+        try {
+            sbn?.let {
+                logger.d("NotificationListener", "Notification posted from: ${it.packageName}")
+            }
+            broadcastUpdate()
+        } catch (e: Exception) {
+            logger.e("NotificationListener", "Error in onNotificationPosted", e)
         }
-        broadcastUpdate()
     }
 
     override fun onNotificationRemoved(sbn: StatusBarNotification?) {
         super.onNotificationRemoved(sbn)
-        sbn?.let {
-            logger.d("NotificationListener", "Notification removed from: ${it.packageName}")
+        try {
+            sbn?.let {
+                logger.d("NotificationListener", "Notification removed from: ${it.packageName}")
+            }
+            broadcastUpdate()
+        } catch (e: Exception) {
+            logger.e("NotificationListener", "Error in onNotificationRemoved", e)
         }
-        broadcastUpdate()
     }
 
     private fun broadcastUpdate() {

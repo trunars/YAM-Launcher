@@ -1,13 +1,30 @@
 package eu.ottop.yamlauncher.settings
 
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import android.content.Context
+import android.content.SharedPreferences
 import android.util.TypedValue
 import androidx.core.content.edit
 import androidx.core.graphics.toColorInt
 import androidx.preference.PreferenceManager
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import eu.ottop.yamlauncher.R
 import eu.ottop.yamlauncher.utils.Logger
+
+private inline fun SharedPreferences.getStringAsInt(key: String, default: Int): Int {
+    return getString(key, default.toString())?.toInt() ?: default
+}
+
+private inline fun SharedPreferences.getStringAsLong(key: String, default: Long): Long {
+    return getString(key, default.toString())?.toLong() ?: default
+}
+
+private inline fun SharedPreferences.getStringAsFloat(key: String, default: Float): Float {
+    return getString(key, default.toString())?.toFloat() ?: default
+}
+
+private inline fun SharedPreferences.getBooleanOrDefault(key: String, default: Boolean): Boolean {
+    return getBoolean(key, default)
+}
 
 class SharedPreferenceManager(private val context: Context) {
 
@@ -50,42 +67,27 @@ class SharedPreferenceManager(private val context: Context) {
         return preferences.getString("textStyle", "normal")
     }
 
-    fun isTextShadowEnabled(): Boolean {
-        return preferences.getBoolean("textShadow", false)
-    }
+    fun isTextShadowEnabled(): Boolean = preferences.getBooleanOrDefault("textShadow", false)
 
-    fun isBarVisible(): Boolean {
-        return preferences.getBoolean("barVisibility", false)
-    }
+    fun isBarVisible(): Boolean = preferences.getBooleanOrDefault("barVisibility", false)
 
     fun getAnimationSpeed(): Long {
-        val animSpeed = preferences.getString("animationSpeed", "200")?.toLong()
-        if (animSpeed != null) {
-            return animSpeed
-        }
-        return 200
+        return preferences.getStringAsLong("animationSpeed", 200)
     }
 
     fun getSwipeThreshold(): Int {
-        return preferences.getString("swipeThreshold", "100")?.toInt() ?: 100
+        return preferences.getStringAsInt("swipeThreshold", 100)
     }
 
     fun getSwipeVelocity(): Int {
-        return preferences.getString("swipeVelocity", "100")?.toInt() ?: 100
+        return preferences.getStringAsInt("swipeVelocity", 100)
     }
 
-    fun isConfirmationEnabled(): Boolean {
-        return preferences.getBoolean("enableConfirmation", false)
-    }
+    fun isConfirmationEnabled(): Boolean = preferences.getBooleanOrDefault("enableConfirmation", false)
 
-    fun isSettingsLocked(): Boolean {
-        return preferences.getBoolean("lockSettings", false)
-    }
+    fun isSettingsLocked(): Boolean = preferences.getBooleanOrDefault("lockSettings", false)
 
-    // Home Screen
-    fun isClockEnabled(): Boolean {
-        return preferences.getBoolean("clockEnabled", true)
-    }
+    fun isClockEnabled(): Boolean = preferences.getBooleanOrDefault("clockEnabled", true)
 
     fun getClockAlignment(): String? {
         return preferences.getString("clockAlignment", "left")
@@ -95,9 +97,7 @@ class SharedPreferenceManager(private val context: Context) {
         return preferences.getString("clockSize", "medium")
     }
 
-    fun isDateEnabled(): Boolean {
-        return preferences.getBoolean("dateEnabled", true)
-    }
+    fun isDateEnabled(): Boolean = preferences.getBooleanOrDefault("dateEnabled", true)
 
     fun getDateSize(): String? {
         return preferences.getString("dateSize", "medium")
@@ -114,8 +114,8 @@ class SharedPreferenceManager(private val context: Context) {
         return value?.split("§splitter§")
     }
 
-    fun getShortcutNumber(): Int? {
-        return preferences.getString("shortcutNo", "4")?.toInt()
+    fun getShortcutNumber(): Int {
+        return preferences.getStringAsInt("shortcutNo", 4)
     }
 
     fun getShortcutAlignment(): String? {
@@ -130,22 +130,15 @@ class SharedPreferenceManager(private val context: Context) {
         return preferences.getString("shortcutSize", "medium")
     }
 
-    fun getShortcutWeight(): Float? {
-        return preferences.getString("shortcutWeight", "0.09")?.toFloat()
+    fun getShortcutWeight(): Float {
+        return preferences.getStringAsFloat("shortcutWeight", 0.09f)
     }
 
-    fun areShortcutsLocked(): Boolean {
-        return preferences.getBoolean("lockShortcuts", false)
-    }
+    fun areShortcutsLocked(): Boolean = preferences.getBooleanOrDefault("lockShortcuts", false)
 
-    fun isNotificationDotsEnabled(): Boolean {
-        return preferences.getBoolean("notificationDots", false)
-    }
+    fun isNotificationDotsEnabled(): Boolean = preferences.getBooleanOrDefault("notificationDots", false)
 
-    // Show hidden apps in shortcut selection
-    fun showHiddenShortcuts(): Boolean {
-        return preferences.getBoolean("showHiddenShortcuts", true)
-    }
+    fun showHiddenShortcuts(): Boolean = preferences.getBooleanOrDefault("showHiddenShortcuts", true)
 
     fun setPinnedApp(componentName: String, profile: Int) {
         preferences.edit {
@@ -189,18 +182,12 @@ class SharedPreferenceManager(private val context: Context) {
         return getPinnedApps().contains(Pair(componentName, profile))
     }
 
-    fun isBatteryEnabled(): Boolean {
-        return preferences.getBoolean("batteryEnabled", false)
-    }
+    fun isBatteryEnabled(): Boolean = preferences.getBooleanOrDefault("batteryEnabled", false)
 
     // Weather
-    fun isWeatherEnabled(): Boolean {
-        return preferences.getBoolean("weatherEnabled", false)
-    }
+    fun isWeatherEnabled(): Boolean = preferences.getBooleanOrDefault("weatherEnabled", false)
 
-    fun isWeatherGPS(): Boolean {
-        return preferences.getBoolean("gpsLocation", false)
-    }
+    fun isWeatherGPS(): Boolean = preferences.getBooleanOrDefault("gpsLocation", false)
 
     fun setWeatherGPS(isEnabled: Boolean) {
         preferences.edit {
@@ -263,13 +250,9 @@ class SharedPreferenceManager(private val context: Context) {
         }
     }
 
-    fun isClockGestureEnabled(): Boolean {
-        return preferences.getBoolean("clockClick", true)
-    }
+    fun isClockGestureEnabled(): Boolean = preferences.getBooleanOrDefault("clockClick", true)
 
-    fun isDateGestureEnabled(): Boolean {
-        return preferences.getBoolean("dateClick", true)
-    }
+    fun isDateGestureEnabled(): Boolean = preferences.getBooleanOrDefault("dateClick", true)
 
     // Gestures
     fun setGestures(direction: String, appInfo: String?) {
@@ -287,13 +270,9 @@ class SharedPreferenceManager(private val context: Context) {
         return preferences.getString("${direction}SwipeApp", "")?.split("§splitter§")
     }
 
-    fun isGestureEnabled(direction: String): Boolean {
-        return preferences.getBoolean("${direction}Swipe", false)
-    }
+    fun isGestureEnabled(direction: String): Boolean = preferences.getBooleanOrDefault("${direction}Swipe", false)
 
-    fun isDoubleTapEnabled(): Boolean {
-        return preferences.getBoolean("doubleTap", false)
-    }
+    fun isDoubleTapEnabled(): Boolean = preferences.getBooleanOrDefault("doubleTap", false)
 
     fun getDoubleTapAction(): String {
         val action = preferences.getString("doubleTapAction", null)
@@ -301,7 +280,7 @@ class SharedPreferenceManager(private val context: Context) {
             return action
         }
 
-        val migratedAction = if (preferences.getBoolean("doubleTapSwipe", false)) "app" else "lock"
+        val migratedAction = if (preferences.getBooleanOrDefault("doubleTapSwipe", false)) "app" else "lock"
         preferences.edit {
             putString("doubleTapAction", migratedAction)
             remove("doubleTapSwipe")
@@ -318,33 +297,19 @@ class SharedPreferenceManager(private val context: Context) {
         return preferences.getString("appMenuSize", "medium")
     }
 
-    fun isPinEnabled(): Boolean {
-        return preferences.getBoolean("pinEnabled", true)
-    }
+    fun isPinEnabled(): Boolean = preferences.getBooleanOrDefault("pinEnabled", true)
 
-    fun isInfoEnabled(): Boolean {
-        return preferences.getBoolean("infoEnabled", true)
-    }
+    fun isInfoEnabled(): Boolean = preferences.getBooleanOrDefault("infoEnabled", true)
 
-    fun isUninstallEnabled(): Boolean {
-        return preferences.getBoolean("uninstallEnabled", true)
-    }
+    fun isUninstallEnabled(): Boolean = preferences.getBooleanOrDefault("uninstallEnabled", true)
 
-    fun isRenameEnabled(): Boolean {
-        return preferences.getBoolean("renameEnabled", true)
-    }
+    fun isRenameEnabled(): Boolean = preferences.getBooleanOrDefault("renameEnabled", true)
 
-    fun isHideEnabled(): Boolean {
-        return preferences.getBoolean("hideEnabled", true)
-    }
+    fun isHideEnabled(): Boolean = preferences.getBooleanOrDefault("hideEnabled", true)
 
-    fun isCloseEnabled(): Boolean {
-        return preferences.getBoolean("closeEnabled", true)
-    }
+    fun isCloseEnabled(): Boolean = preferences.getBooleanOrDefault("closeEnabled", true)
 
-    fun isSearchEnabled(): Boolean {
-        return preferences.getBoolean("searchEnabled", true)
-    }
+    fun isSearchEnabled(): Boolean = preferences.getBooleanOrDefault("searchEnabled", true)
 
     fun getSearchAlignment(): String? {
         return preferences.getString("searchAlignment", "left")
@@ -354,25 +319,17 @@ class SharedPreferenceManager(private val context: Context) {
         return preferences.getString("searchSize", "medium")
     }
 
-    fun isFuzzySearchEnabled(): Boolean {
-        return preferences.getBoolean("fuzzySearchEnabled", false)
+    fun isFuzzySearchEnabled(): Boolean = preferences.getBooleanOrDefault("fuzzySearchEnabled", false)
+
+    fun getAppSpacing(): Int {
+        return preferences.getStringAsInt("appSpacing", 20)
     }
 
-    fun getAppSpacing(): Int? {
-        return preferences.getString("appSpacing", "20")?.toInt()
-    }
+    fun isAutoKeyboardEnabled(): Boolean = preferences.getBooleanOrDefault("autoKeyboard", false)
 
-    fun isAutoKeyboardEnabled(): Boolean {
-        return preferences.getBoolean("autoKeyboard", false)
-    }
+    fun isAutoLaunchEnabled(): Boolean = preferences.getBooleanOrDefault("autoLaunch", false)
 
-    fun isAutoLaunchEnabled(): Boolean {
-        return preferences.getBoolean("autoLaunch", false)
-    }
-
-    fun areContactsEnabled(): Boolean {
-        return preferences.getBoolean("contactsEnabled", false)
-    }
+    fun areContactsEnabled(): Boolean = preferences.getBooleanOrDefault("contactsEnabled", false)
 
     fun setContactsEnabled(isEnabled: Boolean) {
         preferences.edit {
@@ -381,12 +338,10 @@ class SharedPreferenceManager(private val context: Context) {
     }
 
     fun isWebSearchEnabled(): Boolean {
-        return preferences.getBoolean("webSearchEnabled", false) && isSearchEnabled() && !isAutoLaunchEnabled()
+        return preferences.getBooleanOrDefault("webSearchEnabled", false) && isSearchEnabled() && !isAutoLaunchEnabled()
     }
 
-    fun isAlphabetIndexEnabled(): Boolean {
-        return preferences.getBoolean("alphabetIndexEnabled", false)
-    }
+    fun isAlphabetIndexEnabled(): Boolean = preferences.getBooleanOrDefault("alphabetIndexEnabled", false)
 
     fun getAlphabetIndexPosition(): String? {
         return preferences.getString("alphabetIndexPosition", "right")
