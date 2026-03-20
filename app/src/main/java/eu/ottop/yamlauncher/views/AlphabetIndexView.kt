@@ -29,9 +29,11 @@ class AlphabetIndexView @JvmOverloads constructor(
     private var highlightColor: Int = Color.CYAN
     private var minTextSize: Float = 32f
     private var maxTextSize: Float = 56f
+    private var textShadowEnabled: Boolean = false
 
     private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
+        setShadowLayer(0f, 0f, 0f, Color.TRANSPARENT)
     }
 
     private val highlightPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -82,6 +84,16 @@ class AlphabetIndexView @JvmOverloads constructor(
 
     fun setHighlightColor(color: Int) {
         highlightColor = color
+        invalidate()
+    }
+
+    fun setTextShadow(enabled: Boolean) {
+        textShadowEnabled = enabled
+        if (enabled) {
+            textPaint.setShadowLayer(4f, 2f, 2f, Color.BLACK)
+        } else {
+            textPaint.setShadowLayer(0f, 0f, 0f, Color.TRANSPARENT)
+        }
         invalidate()
     }
 

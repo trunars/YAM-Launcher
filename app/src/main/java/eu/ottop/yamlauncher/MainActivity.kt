@@ -760,6 +760,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                 uiUtils.setImageColor(internetSearch)
                 if (sharedPreferenceManager.isAlphabetIndexEnabled()) {
                     alphabetIndex.setTextColor(sharedPreferenceManager.getTextColor())
+                    alphabetIndex.setTextShadow(sharedPreferenceManager.isTextShadowEnabled())
                 }
             }
 
@@ -769,6 +770,9 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                 uiUtils.setMenuItemColors(menuTitle, "A9")
                 uiUtils.setImageColor(searchSwitcher)
                 uiUtils.setImageColor(internetSearch)
+                if (sharedPreferenceManager.isAlphabetIndexEnabled()) {
+                    alphabetIndex.setTextShadow(sharedPreferenceManager.isTextShadowEnabled())
+                }
             }
 
             "textFont", "textStyle" -> {
@@ -1023,6 +1027,7 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                 return@post
             }
             alphabetIndex.setTextColor(sharedPreferenceManager.getTextColor())
+            alphabetIndex.setTextShadow(sharedPreferenceManager.isTextShadowEnabled())
             alphabetIndex.setAvailableLetters(availableLetters)
             setAlphabetIndexPosition()
             alphabetIndex.visibility = if (availableLetters.isNotEmpty()) View.VISIBLE else View.GONE

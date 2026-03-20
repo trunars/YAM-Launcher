@@ -94,6 +94,11 @@ class ContactsAdapter(
 
         uiUtils.setTextFont(holder.listItem)
         holder.textView.setTextColor(sharedPreferenceManager.getTextColor())
+        if (sharedPreferenceManager.isTextShadowEnabled()) {
+            holder.textView.setShadowLayer(4f, 2f, 2f, android.graphics.Color.BLACK)
+        } else {
+            holder.textView.setShadowLayer(0f, 0f, 0f, android.graphics.Color.TRANSPARENT)
+        }
 
         holder.textView.text = contact.first
 
