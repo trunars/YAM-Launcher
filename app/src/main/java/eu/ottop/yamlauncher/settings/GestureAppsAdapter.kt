@@ -15,6 +15,10 @@ import eu.ottop.yamlauncher.R
 import eu.ottop.yamlauncher.utils.AppNameResolver
 import eu.ottop.yamlauncher.utils.UIUtils
 
+/**
+ * RecyclerView adapter for selecting apps in gesture settings.
+ * Used when configuring swipe gestures or tap actions.
+ */
 class GestureAppsAdapter(
     private val context: Context,
     var apps: MutableList<Triple<LauncherActivityInfo, UserHandle, Int>>,
@@ -25,9 +29,16 @@ class GestureAppsAdapter(
     private val sharedPreferenceManager = SharedPreferenceManager(context)
     private val uiUtils = UIUtils(context)
 
+    /**
+     * Called when user selects an app for a gesture.
+     */
     interface OnItemClickListener {
         fun onItemClick(appInfo: LauncherActivityInfo, profile: Int)
     }
+
+    // ============================================
+    // ViewHolder
+    // ============================================
 
     inner class AppViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val listItem: FrameLayout = itemView.findViewById(R.id.listItem)
@@ -41,10 +52,13 @@ class GestureAppsAdapter(
                 }
                 val appEntry = apps.getOrNull(position) ?: return@setOnClickListener
                 itemClickListener.onItemClick(appEntry.first, appEntry.third)
-
             }
         }
     }
+
+    // ============================================
+    // Adapter Methods
+    // ============================================
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): AppViewHolder {
         val view = LayoutInflater.from(parent.context)
@@ -58,6 +72,7 @@ class GestureAppsAdapter(
         }
         val app = apps[position]
 
+        // Show work profile indicator
         if (app.third != 0) {
             holder.textView.setCompoundDrawablesWithIntrinsicBounds(ResourcesCompat.getDrawable(context.resources,
                 R.drawable.ic_work_app, null),null,null,null)
@@ -67,13 +82,12 @@ class GestureAppsAdapter(
                 R.drawable.ic_empty, null),null,null,null)
         }
 
+        // Apply styling
         uiUtils.setAppAlignment(holder.textView)
-
         uiUtils.setAppSize(holder.textView)
-
         uiUtils.setItemSpacing(holder.textView)
 
-        // Does not need to be specially updated since it's in a separate activity and thus reloads when opened again
+        // Get app name (may have been renamed)
         holder.textView.text = sharedPreferenceManager.getAppName(
             app.first.componentName.flattenToString(),
             app.third,
@@ -87,6 +101,11 @@ class GestureAppsAdapter(
         return apps.size
     }
 
+    /**
+     * Updates the filtered app list.
+     * 
+     * @param newApps Filtered list of apps
+     */
     @SuppressLint("NotifyDataSetChanged")
     fun updateApps(newApps: List<Triple<LauncherActivityInfo, UserHandle, Int>>) {
         apps = newApps.toMutableList()

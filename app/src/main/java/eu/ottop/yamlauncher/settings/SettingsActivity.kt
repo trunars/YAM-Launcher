@@ -26,6 +26,10 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+/**
+ * Settings activity hosting all settings fragments.
+ * Handles backup/restore, permissions, and app restart.
+ */
 class SettingsActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceChangeListener {
 
     private companion object {
@@ -56,15 +60,18 @@ class SettingsActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferen
         binding = ActivitySettingsBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        // Set up UI
         uiUtils.setBackground(window)
         preferences.registerOnSharedPreferenceChangeListener(this)
 
+        // Configure action bar
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.title = getString(R.string.settings_title)
         supportActionBar?.setDisplayShowTitleEnabled(true)
 
         uiUtils.adjustInsets(binding.root)
 
+        // Load initial fragment if none exists
         if (supportFragmentManager.backStackEntryCount == 0) {
             supportFragmentManager
                 .beginTransaction()
@@ -72,10 +79,12 @@ class SettingsActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferen
                 .commit()
         }
 
+        // Update action bar title on back stack changes
         supportFragmentManager.addOnBackStackChangedListener {
             updateActionBarTitle()
         }
 
+        // Register activity result launchers for file operations
         performBackup = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == Activity.RESULT_OK) {
                 result.data?.data?.let { uri ->
@@ -111,6 +120,9 @@ class SettingsActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferen
         return true
     }
 
+    /**
+     * Updates action bar title based on current fragment.
+     */
     private fun updateActionBarTitle() {
         val fragment = supportFragmentManager.findFragmentById(R.id.settingsLayout)
         if (fragment is TitleProvider) {
@@ -118,6 +130,10 @@ class SettingsActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferen
         }
     }
 
+    /**
+     * Initiates backup process.
+     * Opens file picker for user to select save location.
+     */
     fun createBackup() {
         val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
         val createFileIntent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
@@ -128,16 +144,23 @@ class SettingsActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferen
         performBackup.launch(createFileIntent)
     }
 
+    /**
+     * Saves all preferences to JSON file.
+     */
     private fun saveSharedPreferencesToFile(uri: Uri) {
         val allEntries = preferences.all
 
+        // Build JSON structure with metadata and data
         val backupData = JSONObject().apply {
             put("app_id", application.packageName)
             put("schema_version", BACKUP_SCHEMA_VERSION)
             put("created_at", SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ", Locale.US).format(Date()))
+            
             val data = JSONObject()
             for ((key, value) in allEntries) {
+                // Skip transient keys
                 if (key == TRANSIENT_PREF_KEY_RESTORED) continue
+                
                 val entry = JSONObject().apply {
                     when (value) {
                         is String -> put("value", value).put("type", "String")
@@ -147,6 +170,7 @@ class SettingsActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferen
                         is Float -> put("value", value).put("type", "Float")
                         is Set<*> -> {
                             val values = value.filterIsInstance<String>()
+                            // Skip mixed-type sets
                             if (values.size != value.size) return@apply
                             put("value", JSONArray(values)).put("type", "StringSet")
                         }
@@ -161,6 +185,7 @@ class SettingsActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferen
 
         val sharedPreferencesText = backupData.toString(4)
 
+        // Write to file
         try {
             contentResolver.openOutputStream(uri)?.use { outputStream ->
                 outputStream.write(sharedPreferencesText.toByteArray(Charsets.UTF_8))
@@ -173,6 +198,10 @@ class SettingsActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferen
         }
     }
 
+    /**
+     * Initiates restore process.
+     * Opens file picker for user to select backup file.
+     */
     fun restoreBackup() {
         val openFileIntent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
             addCategory(Intent.CATEGORY_OPENABLE)
@@ -181,11 +210,16 @@ class SettingsActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferen
         performRestore.launch(openFileIntent)
     }
 
+    /**
+     * Restores preferences from JSON file.
+     */
     private fun restoreSharedPreferencesFromFile(uri: Uri) {
         val jsonData = readJsonFile(uri)
         if (jsonData != null) {
             try {
                 val backupData = JSONObject(jsonData)
+                
+                // Verify this backup is for this app
                 if (backupData.getString("app_id") != application.packageName) {
                     throw IllegalArgumentException(getString(R.string.restore_wrong_app))
                 }
@@ -193,6 +227,7 @@ class SettingsActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferen
                 val schemaVersion = backupData.optInt("schema_version", 1)
                 val data = backupData.getJSONObject("data")
 
+                // Clear existing and restore
                 val editor = preferences.edit().clear()
 
                 val keys = data.keys()
@@ -205,6 +240,7 @@ class SettingsActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferen
                         continue
                     }
 
+                    // Restore based on type
                     when (type) {
                         "String" -> editor.putString(key, entry.getString("value"))
                         "Int" -> editor.putInt(key, entry.getInt("value"))
@@ -224,6 +260,7 @@ class SettingsActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferen
                         else -> {}
                     }
                 }
+                // Mark as restored for trigger
                 editor.putBoolean(TRANSIENT_PREF_KEY_RESTORED, true)
 
                 editor.apply()
@@ -242,6 +279,9 @@ class SettingsActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferen
         }
     }
 
+    /**
+     * Reads JSON file content.
+     */
     private fun readJsonFile(uri: Uri): String? {
         return try {
             contentResolver.openInputStream(uri)?.bufferedReader(Charsets.UTF_8).use { reader ->
@@ -252,6 +292,9 @@ class SettingsActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferen
         }
     }
 
+    /**
+     * Requests location permission for GPS weather.
+     */
     fun requestLocationPermission() {
         try {
             ActivityCompat.requestPermissions(
@@ -262,6 +305,9 @@ class SettingsActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferen
         } catch(_: Exception) {}
     }
 
+    /**
+     * Requests contacts permission.
+     */
     fun requestContactsPermission() {
         try {
             ActivityCompat.requestPermissions(
@@ -272,6 +318,10 @@ class SettingsActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferen
         } catch(_: Exception) {}
     }
 
+    /**
+     * Restarts the launcher app.
+     * Used after reset to apply default settings.
+     */
     fun restartApp() {
         val restartIntent = Intent(applicationContext, MainActivity::class.java)
         restartIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
@@ -283,6 +333,10 @@ class SettingsActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferen
         pendingIntent.send()
     }
 
+    /**
+     * Initiates log export.
+     * Opens file picker for user to select save location.
+     */
     fun exportLogs() {
         val logger = Logger.getInstance(this)
         if (logger.getLogFileSize() == 0L) {
@@ -299,6 +353,9 @@ class SettingsActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferen
         performLogExport.launch(createFileIntent)
     }
 
+    /**
+     * Writes log content to file.
+     */
     private fun exportLogsToUri(uri: Uri) {
         try {
             val logger = Logger.getInstance(this)
@@ -320,7 +377,7 @@ class SettingsActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferen
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
 
-
+        // Handle location permission result
         if (requestCode == 0) {
             try {
                 val fragment = supportFragmentManager.findFragmentById(R.id.settingsLayout) as? HomeSettingsFragment
@@ -337,6 +394,7 @@ class SettingsActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferen
             }
         }
 
+        // Handle contacts permission result
         if (requestCode == 1) {
             try {
                 val fragment = supportFragmentManager.findFragmentById(R.id.settingsLayout) as? AppMenuSettingsFragment
@@ -356,6 +414,7 @@ class SettingsActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferen
 
     override fun onResume() {
         super.onResume()
+        // Verify permissions are still granted
         if (!permissionUtils.hasPermission(this@SettingsActivity, Manifest.permission.READ_CONTACTS)) {
             sharedPreferenceManager.setContactsEnabled(false)
         }
@@ -370,6 +429,7 @@ class SettingsActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferen
     }
 
     override fun onSharedPreferenceChanged(preferences: SharedPreferences?, key: String?) {
+        // Update background color when changed
         if (key == "bgColor") {
             val uiUtils = UIUtils(this@SettingsActivity)
             uiUtils.setBackground(window)

@@ -4,6 +4,10 @@ import android.os.Bundle
 import androidx.preference.PreferenceFragmentCompat
 import eu.ottop.yamlauncher.R
 
+/**
+ * Context menu settings fragment.
+ * Contains preferences for which actions appear in the app long-press menu.
+ */
 class ContextMenuSettingsFragment : PreferenceFragmentCompat(), TitleProvider {
 
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {

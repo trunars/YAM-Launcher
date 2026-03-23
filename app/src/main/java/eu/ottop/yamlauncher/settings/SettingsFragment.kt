@@ -10,6 +10,10 @@ import eu.ottop.yamlauncher.R
 import eu.ottop.yamlauncher.utils.Logger
 import eu.ottop.yamlauncher.utils.UIUtils
 
+/**
+ * Main settings fragment displaying top-level categories.
+ * Provides navigation to all settings subpages.
+ */
 class SettingsFragment : PreferenceFragmentCompat(), TitleProvider {
 
     private lateinit var sharedPreferenceManager: SharedPreferenceManager
@@ -23,12 +27,11 @@ class SettingsFragment : PreferenceFragmentCompat(), TitleProvider {
         sharedPreferenceManager = SharedPreferenceManager(requireContext())
         logger = Logger.getInstance(requireContext())
 
+        // Find preference references
         val homePref = findPreference<Preference>("defaultHome")
-
         val uiSettings = findPreference<Preference>("uiSettings")
         val homeSettings = findPreference<Preference>("homeSettings")
         val appMenuSettings = findPreference<Preference>("appMenuSettings")
-
         val hiddenPref = findPreference<Preference>("hiddenApps")
         val backupPref = findPreference<Preference>("backup")
         val restorePref = findPreference<Preference>("restore")
@@ -38,8 +41,10 @@ class SettingsFragment : PreferenceFragmentCompat(), TitleProvider {
         val restartPref = findPreference<Preference>("restartLauncher")
         val resetPref = findPreference<Preference>("resetAll")
 
+        // Set up click listeners for each preference
         homePref?.onPreferenceClickListener =
             Preference.OnPreferenceClickListener {
+                // Open system home settings
                 val intent = Intent(Settings.ACTION_HOME_SETTINGS)
                 if (intent.resolveActivity(requireContext().packageManager) != null) {
                     startActivity(intent)
@@ -109,7 +114,5 @@ class SettingsFragment : PreferenceFragmentCompat(), TitleProvider {
     override fun getTitle(): String {
         return getString(R.string.settings_title)
     }
-
-
 
 }

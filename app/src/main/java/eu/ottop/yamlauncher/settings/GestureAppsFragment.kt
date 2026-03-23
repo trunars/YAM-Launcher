@@ -23,6 +23,12 @@ import eu.ottop.yamlauncher.utils.StringUtils
 import eu.ottop.yamlauncher.utils.UIUtils
 import kotlinx.coroutines.launch
 
+/**
+ * Fragment for selecting an app to assign to a gesture.
+ * Used for configuring swipe gestures and tap actions.
+ * 
+ * @param direction Which gesture is being configured
+ */
 class GestureAppsFragment(private val direction: String) : Fragment(),
     GestureAppsAdapter.OnItemClickListener, TitleProvider {
 
@@ -47,6 +53,7 @@ class GestureAppsFragment(private val direction: String) : Fragment(),
         appUtils = AppUtils(requireContext(), launcherApps)
         sharedPreferenceManager = SharedPreferenceManager(requireContext())
 
+        // Load all apps (including hidden) for gesture assignment
         lifecycleScope.launch {
             adapter = GestureAppsAdapter(
                 requireContext(),
@@ -60,21 +67,22 @@ class GestureAppsFragment(private val direction: String) : Fragment(),
 
             recyclerView.edgeEffectFactory = appMenuEdgeFactory
             recyclerView.adapter = adapter
-
             recyclerView.scrollToPosition(0)
 
+            // Set up search
             val searchView = view.findViewById<TextInputEditText>(R.id.gestureAppSearch)
 
             uiUtils.setSearchAlignment(searchView)
             uiUtils.setSearchSize(searchView)
 
+            // Hide keyboard when list scrolls
             recyclerView.addOnLayoutChangeListener { _, _, top, _, bottom, _, oldTop, _, oldBottom ->
-
                 if (bottom - top > oldBottom - oldTop) {
                     searchView.clearFocus()
                 }
             }
 
+            // Search with filtering
             searchView.addTextChangedListener(object :
                 TextWatcher {
                 override fun beforeTextChanged(
@@ -86,7 +94,6 @@ class GestureAppsFragment(private val direction: String) : Fragment(),
                 }
 
                 override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-
                 }
 
                 override fun afterTextChanged(s: Editable?) {
@@ -99,6 +106,9 @@ class GestureAppsFragment(private val direction: String) : Fragment(),
         }
     }
 
+    /**
+     * Filters apps based on search query.
+     */
     private suspend fun filterItems(query: String?) {
 
         val cleanQuery = stringUtils.cleanString(query)
@@ -111,6 +121,9 @@ class GestureAppsFragment(private val direction: String) : Fragment(),
 
     }
 
+    /**
+     * Applies fuzzy or exact matching filter.
+     */
     private fun getFilteredApps(cleanQuery: String?, newFilteredApps: MutableList<Triple<LauncherActivityInfo, UserHandle, Int>>, updatedApps: List<Triple<LauncherActivityInfo, UserHandle, Int>>) {
         if (cleanQuery.isNullOrEmpty()) {
             newFilteredApps.addAll(updatedApps)
@@ -143,6 +156,9 @@ class GestureAppsFragment(private val direction: String) : Fragment(),
         adapter?.updateApps(newFilteredApps)
     }
 
+    /**
+     * Shows confirmation before saving gesture.
+     */
     private fun showConfirmationDialog(appInfo: LauncherActivityInfo, appName: String, profile: Int) {
         MaterialAlertDialogBuilder(requireContext()).apply {
             setTitle(getString(R.string.confirm_title))
@@ -158,6 +174,9 @@ class GestureAppsFragment(private val direction: String) : Fragment(),
         }.create().show()
     }
 
+    /**
+     * Saves gesture configuration and returns.
+     */
     private fun performConfirmedAction(appInfo: LauncherActivityInfo, appName: String, profile: Int) {
         sharedPreferenceManager.setGestures(
             direction, "$appName§splitter§${appInfo.componentName.flattenToString()}§splitter§$profile"

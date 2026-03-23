@@ -1,16 +1,13 @@
 package eu.ottop.yamlauncher.settings
 
-import android.Manifest
-import android.content.Intent
 import android.os.Bundle
-import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
-import androidx.preference.SwitchPreference
 import eu.ottop.yamlauncher.R
-import eu.ottop.yamlauncher.tasks.NotificationListener
-import eu.ottop.yamlauncher.utils.PermissionUtils
-import eu.ottop.yamlauncher.utils.UIUtils
 
+/**
+ * Home screen settings fragment.
+ * Contains preferences for clock, date, gestures, weather, and notifications.
+ */
 class HomeSettingsFragment : PreferenceFragmentCompat(), TitleProvider {
 
     private lateinit var sharedPreferenceManager: SharedPreferenceManager
@@ -33,9 +30,9 @@ class HomeSettingsFragment : PreferenceFragmentCompat(), TitleProvider {
 
         sharedPreferenceManager = SharedPreferenceManager(requireContext())
 
+        // Get preference references
         clockApp = findPreference("clockSwipeApp")
         dateApp = findPreference("dateSwipeApp")
-
         gpsLocationPref = findPreference("gpsLocation")
         manualLocationPref = findPreference("manualLocation")
         leftSwipePref = findPreference("leftSwipeApp")
@@ -45,8 +42,9 @@ class HomeSettingsFragment : PreferenceFragmentCompat(), TitleProvider {
         doubleTapAppPref = findPreference("doubleTapSwipeApp")
         notificationDotsPref = findPreference("notificationDots")
 
-        // Only enable manual location when gps location is disabled
+        // Location preference logic
         if (gpsLocationPref != null && manualLocationPref != null) {
+            // Manual location only available when GPS is disabled
             manualLocationPref?.isEnabled = gpsLocationPref?.isChecked == false
 
             gpsLocationPref?.onPreferenceChangeListener =
@@ -67,6 +65,7 @@ class HomeSettingsFragment : PreferenceFragmentCompat(), TitleProvider {
                 }
         }
 
+        // Gesture app selection listeners
         leftSwipePref?.onPreferenceClickListener =
             Preference.OnPreferenceClickListener {
                 uiUtils.switchFragment(requireActivity(), GestureAppsFragment("left"))
@@ -79,6 +78,7 @@ class HomeSettingsFragment : PreferenceFragmentCompat(), TitleProvider {
                 true
             }
 
+        // Double tap settings
         doubleTapTogglePref?.onPreferenceChangeListener =
             Preference.OnPreferenceChangeListener { _, newValue ->
                 val launchesApp = sharedPreferenceManager.getDoubleTapAction() == "app"
@@ -110,6 +110,7 @@ class HomeSettingsFragment : PreferenceFragmentCompat(), TitleProvider {
                 true
             }
 
+        // Notification dots permission handling
         notificationDotsPref?.onPreferenceChangeListener =
             Preference.OnPreferenceChangeListener { _, newValue ->
                 if (newValue as Boolean && !NotificationListener.isEnabled(requireContext())) {
@@ -125,21 +126,20 @@ class HomeSettingsFragment : PreferenceFragmentCompat(), TitleProvider {
 
     override fun onResume() {
         super.onResume()
+        // Update summary labels
         clockApp?.summary = sharedPreferenceManager.getGestureName("clock")
-
         dateApp?.summary = sharedPreferenceManager.getGestureName("date")
-
         manualLocationPref?.summary = sharedPreferenceManager.getWeatherRegion()
-
         leftSwipePref?.summary = sharedPreferenceManager.getGestureName("left")
-
         rightSwipePref?.summary = sharedPreferenceManager.getGestureName("right")
-
         doubleTapAppPref?.summary = sharedPreferenceManager.getGestureName("doubleTap")
 
         updateDoubleTapAppPreferenceState()
     }
 
+    /**
+     * Updates double tap app preference enabled state.
+     */
     private fun updateDoubleTapAppPreferenceState() {
         val launchesApp = sharedPreferenceManager.getDoubleTapAction() == "app"
         val isDoubleTapEnabled = doubleTapTogglePref?.isChecked == true
@@ -150,6 +150,9 @@ class HomeSettingsFragment : PreferenceFragmentCompat(), TitleProvider {
         return getString(R.string.home_settings_title)
     }
 
+    /**
+     * Called from SettingsActivity after location permission result.
+     */
     fun setLocationPreference(isEnabled: Boolean) {
         manualLocationPref?.isEnabled = !isEnabled
         gpsLocationPref?.isChecked = isEnabled

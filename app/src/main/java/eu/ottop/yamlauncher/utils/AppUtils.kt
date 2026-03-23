@@ -16,32 +16,51 @@ import eu.ottop.yamlauncher.settings.SharedPreferenceManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
+/**
+ * Utility class for app management operations.
+ * Handles launching apps, getting installed apps, and confirmation dialogs.
+ */
 class AppUtils(private val context: Context, private val launcherApps: LauncherApps) {
 
     private val sharedPreferenceManager = SharedPreferenceManager(context)
     private val logger = Logger.getInstance(context)
 
+    /**
+     * Gets list of installed launchable apps.
+     * Includes apps from all user profiles (personal and work).
+     * Filters out hidden apps unless showApps is true.
+     * 
+     * @param showApps If true, includes hidden apps (used for shortcut selection)
+     * @return List of (LauncherActivityInfo, UserHandle, profileIndex) triples
+     * @suspend Must be called from coroutine context
+     */
     suspend fun getInstalledApps(showApps: Boolean = false): List<Triple<LauncherActivityInfo, UserHandle, Int>> {
         val allApps = mutableListOf<Triple<LauncherActivityInfo, UserHandle, Int>>()
         var sortedApps = listOf<Triple<LauncherActivityInfo, UserHandle, Int>>()
         withContext(Dispatchers.Default) {
-            for (i in launcherApps.profiles.indices) { // Check apps on both, normal and work profiles
+            // Iterate through all user profiles (normal and work)
+            for (i in launcherApps.profiles.indices) {
                 launcherApps.getActivityList(null, launcherApps.profiles[i]).forEach { app ->
-                    if ((!sharedPreferenceManager.isAppHidden( // Only include the app if it isn't set as hidden or in shortcut selection with the appropriate option enabled
+                    // Include app if not hidden OR if showing hidden apps for shortcut selection
+                    // Also exclude the launcher itself from the list
+                    if ((!sharedPreferenceManager.isAppHidden(
                             app.componentName.flattenToString(),
                             i
-                        ) or showApps)&& app.applicationInfo.packageName != context.applicationInfo.packageName // Hide the launcher itself
+                        ) or showApps)&& app.applicationInfo.packageName != context.applicationInfo.packageName
                     ) {
-                        allApps.add(Triple(app, launcherApps.profiles[i], i)) // The i variable gets used to determine whether an app is in the personal profile or work profile
+                        // Store app info with profile index (i) to identify personal vs work profile
+                        allApps.add(Triple(app, launcherApps.profiles[i], i))
                     }
                 }
             }
 
-            // Sort apps by name
+            // Sort apps: pinned apps first, then alphabetically by name
             sortedApps = allApps.sortedWith(
                 compareBy<Triple<LauncherActivityInfo, UserHandle, Int>> {
-                    !sharedPreferenceManager.isAppPinned(it.first.componentName.flattenToString(), it.third) // This displays the pinned apps for some reason.
+                    // Invert pinned status so pinned apps come first
+                    !sharedPreferenceManager.isAppPinned(it.first.componentName.flattenToString(), it.third)
                 }.thenBy {
+                // Then sort alphabetically (case-insensitive)
                 sharedPreferenceManager.getAppName(
                     it.first.componentName.flattenToString(),
                     it.third,
@@ -54,20 +73,27 @@ class AppUtils(private val context: Context, private val launcherApps: LauncherA
 
     }
 
-    // Get hidden apps for the hidden apps settings
+    /**
+     * Gets list of hidden apps for the hidden apps settings screen.
+     * Used to allow users to unhide apps.
+     * 
+     * @return List of hidden apps as (LauncherActivityInfo, UserHandle, profileIndex) triples
+     * @suspend Must be called from coroutine context
+     */
     suspend fun getHiddenApps(): List<Triple<LauncherActivityInfo, UserHandle, Int>> {
         val allApps = mutableListOf<Triple<LauncherActivityInfo, UserHandle, Int>>()
         var sortedApps = listOf<Triple<LauncherActivityInfo, UserHandle, Int>>()
         withContext(Dispatchers.Default) {
         for (i in launcherApps.profiles.indices) {
             launcherApps.getActivityList(null, launcherApps.profiles[i]).forEach { app ->
+                // Only include apps that are marked as hidden
                 if (sharedPreferenceManager.isAppHidden(app.componentName.flattenToString(), i)) {
                     allApps.add(Triple(app, launcherApps.profiles[i], i))
                 }
             }
         }
 
-        //Sort apps by name
+        // Sort hidden apps alphabetically
         sortedApps = allApps.sortedBy {
         sharedPreferenceManager.getAppName(
             it.first.componentName.flattenToString(),
@@ -79,6 +105,14 @@ class AppUtils(private val context: Context, private val launcherApps: LauncherA
         return sortedApps
     }
 
+    /**
+     * Gets ApplicationInfo for a specific package and profile.
+     * Used to check if an app is still installed.
+     * 
+     * @param packageName Package name to look up
+     * @param profile Profile index (0 for personal, 1+ for work profiles)
+     * @return ApplicationInfo or null if not found
+     */
     fun getAppInfo(
         packageName: String,
         profile: Int
@@ -93,6 +127,14 @@ class AppUtils(private val context: Context, private val launcherApps: LauncherA
         }
     }
 
+    /**
+     * Internal method to start an app.
+     * Handles the actual launch and error reporting.
+     * 
+     * @param componentName App component to launch
+     * @param userHandle User profile to launch in
+     * @return true if launch succeeded, false otherwise
+     */
     private fun startApp(componentName: ComponentName, userHandle: UserHandle): Boolean {
         return try {
             launcherApps.startMainActivity(componentName, userHandle, null, null)
@@ -105,6 +147,13 @@ class AppUtils(private val context: Context, private val launcherApps: LauncherA
         }
     }
 
+    /**
+     * Launches an app with optional confirmation dialog.
+     * Shows confirmation if user has enabled that preference.
+     * 
+     * @param componentName App component to launch
+     * @param userHandle User profile to launch in
+     */
     fun launchApp(componentName: ComponentName, userHandle: UserHandle) {
         if (sharedPreferenceManager.isConfirmationEnabled()) {
             showConfirmationDialog(componentName, userHandle)
@@ -113,6 +162,10 @@ class AppUtils(private val context: Context, private val launcherApps: LauncherA
         }
     }
 
+    /**
+     * Shows confirmation dialog before launching an app.
+     * Used when "confirm before launch" preference is enabled.
+     */
     private fun showConfirmationDialog(componentName: ComponentName, userHandle: UserHandle) {
         MaterialAlertDialogBuilder(context).apply {
             setTitle(getString(context, R.string.confirm_title))
@@ -123,11 +176,16 @@ class AppUtils(private val context: Context, private val launcherApps: LauncherA
             }
 
             setNegativeButton(getString(context, R.string.confirm_no)) { _, _ ->
+                // User cancelled, do nothing
             }
 
         }.create().show()
     }
 
+    /**
+     * Shows toast message for launch errors.
+     * Posted to main thread to ensure proper display.
+     */
     private fun showLaunchError() {
         Handler(Looper.getMainLooper()).post {
             Toast.makeText(context, getString(context, R.string.launch_error), Toast.LENGTH_SHORT).show()

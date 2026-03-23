@@ -9,7 +9,12 @@ import eu.ottop.yamlauncher.R
 import eu.ottop.yamlauncher.utils.PermissionUtils
 import eu.ottop.yamlauncher.utils.UIUtils
 
-class AppMenuSettingsFragment : PreferenceFragmentCompat(), TitleProvider { private val permissionUtils = PermissionUtils()
+/**
+ * App menu settings fragment.
+ * Contains preferences for search, contacts, and app menu behavior.
+ */
+class AppMenuSettingsFragment : PreferenceFragmentCompat(), TitleProvider {
+    private val permissionUtils = PermissionUtils()
     private var contactPref: SwitchPreference? = null
     private var webSearchPref: SwitchPreference? = null
     private var autoLaunchPref: SwitchPreference? = null
@@ -23,6 +28,7 @@ class AppMenuSettingsFragment : PreferenceFragmentCompat(), TitleProvider { priv
         val uiUtils = UIUtils(requireContext())
         val contextMenuSettings = findPreference<Preference>("contextMenuSettings")
 
+        // Get preference references
         contactPref = findPreference("contactsEnabled")
         webSearchPref = findPreference("webSearchEnabled")
         autoLaunchPref = findPreference("autoLaunch")
@@ -30,6 +36,7 @@ class AppMenuSettingsFragment : PreferenceFragmentCompat(), TitleProvider { priv
 
         webSearchBaseSummary = webSearchPref?.summary
 
+        // Contacts permission handling
         contactPref?.onPreferenceChangeListener = Preference.OnPreferenceChangeListener { _, newValue ->
 
             if (newValue as Boolean && !permissionUtils.hasPermission(requireContext(), Manifest.permission.READ_CONTACTS)) {
@@ -40,8 +47,9 @@ class AppMenuSettingsFragment : PreferenceFragmentCompat(), TitleProvider { priv
                 }
         }
 
+        // Web search and auto-launch are mutually exclusive
         if (webSearchPref != null && autoLaunchPref != null) {
-            // A restored/migrated preference state can end up with both enabled; normalize so settings can't get stuck.
+            // Prevent both being enabled (would cause conflicts)
             if (webSearchPref?.isChecked == true && autoLaunchPref?.isChecked == true) {
                 autoLaunchPref?.isChecked = false
             }
@@ -50,6 +58,7 @@ class AppMenuSettingsFragment : PreferenceFragmentCompat(), TitleProvider { priv
             autoLaunchPref?.isEnabled = (webSearchPref?.isChecked == false)
             updateAutoLaunchSummary(webSearchPref?.isChecked == true)
             updateWebSearchSummary(searchEnabledPref?.isChecked == true, autoLaunchPref?.isChecked == true)
+            
             webSearchPref?.onPreferenceChangeListener = Preference.OnPreferenceChangeListener { _, newValue ->
                 val enabled = newValue as Boolean
                 autoLaunchPref?.isEnabled = !enabled
@@ -66,12 +75,14 @@ class AppMenuSettingsFragment : PreferenceFragmentCompat(), TitleProvider { priv
             }
         }
 
+        // Update web search summary based on search enabled state
         searchEnabledPref?.onPreferenceChangeListener = Preference.OnPreferenceChangeListener { _, newValue ->
             val enabled = newValue as Boolean
             updateWebSearchSummary(enabled, autoLaunchPref?.isChecked == true)
             return@OnPreferenceChangeListener true
         }
 
+        // Navigate to context menu settings
         contextMenuSettings?.onPreferenceClickListener =
             Preference.OnPreferenceClickListener {
                 uiUtils.switchFragment(requireActivity(), ContextMenuSettingsFragment())
@@ -88,6 +99,10 @@ class AppMenuSettingsFragment : PreferenceFragmentCompat(), TitleProvider { priv
         updateWebSearchSummary(searchEnabledPref?.isChecked == true, autoLaunchPref?.isChecked == true)
     }
 
+    /**
+     * Updates auto-launch preference summary.
+     * Adds note when disabled due to web search being enabled.
+     */
     private fun updateAutoLaunchSummary(isWebSearchEnabled: Boolean) {
         val autoLaunch = autoLaunchPref ?: return
         val base = getString(R.string.auto_launch_summary)
@@ -98,11 +113,15 @@ class AppMenuSettingsFragment : PreferenceFragmentCompat(), TitleProvider { priv
         autoLaunch.summary = "$base\n${getString(R.string.auto_launch_disabled_reason_web_search)}"
     }
 
+    /**
+     * Updates web search preference summary.
+     * Adds note when disabled due to auto-launch being enabled.
+     */
     private fun updateWebSearchSummary(isSearchEnabled: Boolean, isAutoOpenEnabled: Boolean) {
         val webSearch = webSearchPref ?: return
         val base = webSearchBaseSummary?.toString()?.trim().orEmpty()
 
-        // Don't add a redundant note when search itself is disabled.
+        // Don't add note when search itself is disabled
         if (!isSearchEnabled) {
             webSearch.summary = webSearchBaseSummary
             return
@@ -117,6 +136,9 @@ class AppMenuSettingsFragment : PreferenceFragmentCompat(), TitleProvider { priv
         webSearch.summary = if (base.isEmpty()) reason else "$base\n$reason"
     }
 
+    /**
+     * Called from SettingsActivity after contacts permission result.
+     */
     fun setContactPreference(isEnabled: Boolean) {
         contactPref?.isChecked = isEnabled
     }

@@ -24,6 +24,10 @@ import eu.ottop.yamlauncher.utils.StringUtils
 import eu.ottop.yamlauncher.utils.UIUtils
 import kotlinx.coroutines.launch
 
+/**
+ * Fragment for managing hidden apps.
+ * Shows list of hidden apps and allows unhiding.
+ */
 class HiddenAppsFragment : Fragment(), HiddenAppsAdapter.OnItemClickListener, TitleProvider {
 
     private lateinit var sharedPreferenceManager: SharedPreferenceManager
@@ -48,37 +52,37 @@ class HiddenAppsFragment : Fragment(), HiddenAppsAdapter.OnItemClickListener, Ti
         appUtils = AppUtils(requireContext(), launcherApps)
         sharedPreferenceManager = SharedPreferenceManager(requireContext())
 
+        // Load hidden apps
         lifecycleScope.launch {
             val recyclerView = view.findViewById<RecyclerView>(R.id.hiddenAppRecycler)
             val appMenuEdgeFactory = AppMenuEdgeFactory(requireActivity())
 
             adapter = HiddenAppsAdapter(requireContext(), appUtils.getHiddenApps().toMutableList(), this@HiddenAppsFragment)
 
-
             recyclerView.edgeEffectFactory = appMenuEdgeFactory
             recyclerView.adapter = adapter
-
             recyclerView.scrollToPosition(0)
 
+            // Set up search
             val searchView = view.findViewById<TextInputEditText>(R.id.hiddenAppSearch)
 
             uiUtils.setSearchAlignment(searchView)
             uiUtils.setSearchSize(searchView)
 
+            // Hide keyboard on scroll
             recyclerView.addOnLayoutChangeListener { _, _, top, _, bottom, _, oldTop, _, oldBottom ->
-
                 if (bottom - top > oldBottom - oldTop) {
                     searchView.clearFocus()
                 }
             }
 
+            // Search filtering
             searchView.addTextChangedListener(object :
                 TextWatcher {
                 override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
                 }
 
                 override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-
                 }
 
                 override fun afterTextChanged(s: Editable?) {
@@ -89,6 +93,7 @@ class HiddenAppsFragment : Fragment(), HiddenAppsAdapter.OnItemClickListener, Ti
                 }
             })
 
+            // Auto-open keyboard if preference set
             if (sharedPreferenceManager.isAutoKeyboardEnabled()) {
                 val imm =
                     requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
@@ -98,6 +103,9 @@ class HiddenAppsFragment : Fragment(), HiddenAppsAdapter.OnItemClickListener, Ti
     }
     }
 
+    /**
+     * Filters hidden apps based on search query.
+     */
     private suspend fun filterItems(query: String?) {
 
         val cleanQuery = stringUtils.cleanString(query)
@@ -110,6 +118,9 @@ class HiddenAppsFragment : Fragment(), HiddenAppsAdapter.OnItemClickListener, Ti
 
     }
 
+    /**
+     * Applies fuzzy or exact matching filter.
+     */
     private fun getFilteredApps(cleanQuery: String?, newFilteredApps: MutableList<Triple<LauncherActivityInfo, UserHandle, Int>>, updatedApps: List<Triple<LauncherActivityInfo, UserHandle, Int>>) {
         if (cleanQuery.isNullOrEmpty()) {
             newFilteredApps.addAll(updatedApps)
@@ -142,6 +153,9 @@ class HiddenAppsFragment : Fragment(), HiddenAppsAdapter.OnItemClickListener, Ti
         adapter?.updateApps(newFilteredApps)
     }
 
+    /**
+     * Shows confirmation before unhiding app.
+     */
     private fun showConfirmationDialog(appInfo: LauncherActivityInfo, appName: String, profile: Int) {
         MaterialAlertDialogBuilder(requireContext()).apply {
             setTitle(getString(R.string.confirm_title))
@@ -157,6 +171,9 @@ class HiddenAppsFragment : Fragment(), HiddenAppsAdapter.OnItemClickListener, Ti
         }.create().show()
     }
 
+    /**
+     * Unhides app and refreshes list.
+     */
     private suspend fun performConfirmedAction(appInfo: LauncherActivityInfo, profile: Int) {
         sharedPreferenceManager.setAppVisible(appInfo.componentName.flattenToString(), profile)
         adapter?.updateApps(appUtils.getHiddenApps())

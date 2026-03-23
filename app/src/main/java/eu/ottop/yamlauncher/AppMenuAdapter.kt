@@ -25,6 +25,17 @@ import eu.ottop.yamlauncher.utils.AppUtils
 import eu.ottop.yamlauncher.utils.Logger
 import eu.ottop.yamlauncher.utils.UIUtils
 
+/**
+ * RecyclerView adapter for displaying installed apps in the app menu.
+ * Handles app launching, shortcut assignment, and renaming.
+ * 
+ * Features:
+ * - DiffUtil for efficient list updates
+ * - Pinned apps display with special icons
+ * - Work profile indicator
+ * - Shortcut selection mode
+ * - Accessibility actions
+ */
 class AppDiffCallback(
     private val oldList: List<Triple<LauncherActivityInfo, UserHandle, Int>>,
     private val newList: List<Triple<LauncherActivityInfo, UserHandle, Int>>
@@ -33,16 +44,30 @@ class AppDiffCallback(
     override fun getOldListSize() = oldList.size
     override fun getNewListSize() = newList.size
 
+    /**
+     * Checks if items represent the same app.
+     * Uses component name and profile index for comparison.
+     */
     override fun areItemsTheSame(oldPos: Int, newPos: Int): Boolean {
         return oldList[oldPos].first.componentName == newList[newPos].first.componentName &&
                oldList[oldPos].third == newList[newPos].third
     }
 
+    /**
+     * Checks if item contents have changed.
+     * Compares app labels for content changes.
+     */
     override fun areContentsTheSame(oldPos: Int, newPos: Int): Boolean {
         return oldList[oldPos].first.label == newList[newPos].first.label
     }
 }
 
+/**
+ * Adapter for displaying apps in the app menu.
+ * Supports multiple interaction modes:
+ * - Normal: Click to launch, long-press for actions
+ * - Shortcut selection: Click to assign to shortcut slot
+ */
 class AppMenuAdapter(
     private val activity: MainActivity,
     binding: ActivityMainBinding,
@@ -54,23 +79,37 @@ class AppMenuAdapter(
 ) :
     RecyclerView.Adapter<AppMenuAdapter.AppViewHolder>() {
 
-        // If the menu is opened to select shortcuts, the below variable is set
-        var shortcutIndex: Int = 0
-        var shortcutTextView: TextView? = null
+    // When set, clicking an app assigns it to this shortcut slot
+    var shortcutIndex: Int = 0
+    var shortcutTextView: TextView? = null
 
-        private val sharedPreferenceManager = SharedPreferenceManager(activity)
-        private val uiUtils = UIUtils(activity)
-        private val appUtils = AppUtils(activity, launcherApps)
-        private val logger = Logger.getInstance(activity)
+    private val sharedPreferenceManager = SharedPreferenceManager(activity)
+    private val uiUtils = UIUtils(activity)
+    private val appUtils = AppUtils(activity, launcherApps)
+    private val logger = Logger.getInstance(activity)
 
+    // ============================================
+    // Listener Interfaces
+    // ============================================
+
+    /** Called when user clicks an app to launch it */
     interface OnItemClickListener {
         fun onItemClick(appInfo: LauncherActivityInfo, userHandle: UserHandle)
     }
 
+    /** Called when user selects an app for a shortcut */
     interface OnShortcutListener {
-        fun onShortcut(appInfo: LauncherActivityInfo, userHandle: UserHandle, textView: TextView, userProfile: Int, shortcutView: TextView, shortcutIndex: Int)
+        fun onShortcut(
+            appInfo: LauncherActivityInfo,
+            userHandle: UserHandle,
+            textView: TextView,
+            userProfile: Int,
+            shortcutView: TextView,
+            shortcutIndex: Int
+        )
     }
 
+    /** Called when user long-presses an app */
     interface OnItemLongClickListener {
         fun onItemLongClick(
             appInfo: LauncherActivityInfo,
@@ -79,13 +118,22 @@ class AppMenuAdapter(
         )
     }
 
+    // ============================================
+    // ViewHolder
+    // ============================================
+
     inner class AppViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        // Container for the list item
         val listItem: FrameLayout = itemView.findViewById(R.id.listItem)
+        // App name display
         val textView: TextView = listItem.findViewById(R.id.appName)
+        // Rename input layout (hidden by default)
         val editView: LinearLayout = listItem.findViewById(R.id.renameView)
+        // Text field in rename layout
         val editText: TextInputEditText = editView.findViewById(R.id.appNameEdit)
 
         init {
+            // Single tap behavior depends on mode
             textView.setOnClickListener {
                 val position = bindingAdapterPosition
                 if (position == RecyclerView.NO_POSITION || position >= apps.size) {
@@ -94,7 +142,7 @@ class AppMenuAdapter(
                 val entry = apps[position]
                 val app = entry.first
 
-                // If opened to select a shortcut, set the shortcut instead of launching the app
+                // If in shortcut selection mode, assign to shortcut instead of launching
                 val localShortcut = shortcutTextView
                 if (localShortcut != null) {
                     shortcutListener.onShortcut(app, entry.second, textView, entry.third, localShortcut, shortcutIndex)
@@ -104,6 +152,7 @@ class AppMenuAdapter(
                 }
             }
 
+            // Long press opens action menu or assigns shortcut
             textView.setOnLongClickListener {
                 val position = bindingAdapterPosition
                 if (position == RecyclerView.NO_POSITION || position >= apps.size) {
@@ -113,13 +162,13 @@ class AppMenuAdapter(
                 val entry = apps[position]
                 val app = entry.first
 
-                // If opened to select a shortcut, set the shortcut instead of opening the action menu
+                // In shortcut mode, long press also assigns
                 val localShortcut = shortcutTextView
                 if (localShortcut != null) {
                     shortcutListener.onShortcut(app, entry.second, textView, entry.third, localShortcut, shortcutIndex)
                     return@setOnLongClickListener true
                 } else {
-
+                    // Normal mode: show action menu
                     itemLongClickListener.onItemLongClick(
                         app,
                         entry.second,
@@ -130,6 +179,10 @@ class AppMenuAdapter(
             }
         }
     }
+
+    // ============================================
+    // Adapter Methods
+    // ============================================
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): AppViewHolder {
         val view = LayoutInflater.from(parent.context)
@@ -144,31 +197,33 @@ class AppMenuAdapter(
         }
         val app = apps[position]
 
+        // Show pin icon for pinned apps
         if (sharedPreferenceManager.isAppPinned(app.first.componentName.flattenToString(), app.third)) {
             if (app.third != 0) {
+                // Pinned work profile app
                 holder.textView.setCompoundDrawablesWithIntrinsicBounds(ResourcesCompat.getDrawable(activity.resources, R.drawable.keep_filled_15px, null),null, ResourcesCompat.getDrawable(activity.resources, R.drawable.ic_empty, null),null)
             }
             else {
+                // Pinned personal profile app
                 holder.textView.setCompoundDrawablesWithIntrinsicBounds(ResourcesCompat.getDrawable(activity.resources, R.drawable.keep_15px, null),null,ResourcesCompat.getDrawable(activity.resources, R.drawable.ic_empty, null),null)
             }
             holder.textView.compoundDrawables.getOrNull(0)?.colorFilter = BlendModeColorFilter(sharedPreferenceManager.getTextColor(), BlendMode.SRC_ATOP)
         }
-        // Set initial drawables
+        // Show work profile icon for non-pinned work apps
         else if (app.third != 0) {
             holder.textView.setCompoundDrawablesWithIntrinsicBounds(ResourcesCompat.getDrawable(activity.resources, R.drawable.ic_work_app, null),null, ResourcesCompat.getDrawable(activity.resources, R.drawable.ic_empty, null),null)
             holder.textView.compoundDrawables.getOrNull(0)?.colorFilter =
                 BlendModeColorFilter(sharedPreferenceManager.getTextColor(), BlendMode.SRC_ATOP)
         }
+        // Empty drawable for personal profile non-pinned apps
         else {
             holder.textView.setCompoundDrawablesWithIntrinsicBounds(ResourcesCompat.getDrawable(activity.resources, R.drawable.ic_empty, null),null,ResourcesCompat.getDrawable(activity.resources, R.drawable.ic_empty, null),null)
         }
 
+        // Apply styling from preferences
         uiUtils.setAppAlignment(holder.textView, holder.editText)
-
         uiUtils.setAppSize(holder.textView, holder.editText)
-
         uiUtils.setItemSpacing(holder.textView)
-
         uiUtils.setTextFont(holder.listItem)
         holder.textView.setTextColor(sharedPreferenceManager.getTextColor())
         if (sharedPreferenceManager.isTextShadowEnabled()) {
@@ -177,20 +232,20 @@ class AppMenuAdapter(
             holder.textView.setShadowLayer(0f, 0f, 0f, android.graphics.Color.TRANSPARENT)
         }
 
-        // Update the application information (allows updating apps to work)
+        // Check if app is still installed
         val isAppInstalled = appUtils.getAppInfo(
             app.first.applicationInfo.packageName,
             app.third
         ) != null
 
-        // Set app name on the menu. If the app has been uninstalled, replace it with "Removing" until the app menu updates.
+        // Set app name or removal placeholder
         if (isAppInstalled) {
             holder.textView.text = sharedPreferenceManager.getAppName(
                 app.first.componentName.flattenToString(),
                 app.third,
                 AppNameResolver.resolveBaseLabel(activity, app.first)
             )
-
+            // Pre-fill edit text for rename mode
             holder.editText.setText(holder.textView.text)
         }
         else {
@@ -199,6 +254,7 @@ class AppMenuAdapter(
 
         holder.textView.visibility = View.VISIBLE
 
+        // Accessibility actions
         ViewCompat.addAccessibilityAction(holder.textView, activity.getString(R.string.close_app_menu)) { _, _ ->
             activity.backToHome()
             true
@@ -216,6 +272,12 @@ class AppMenuAdapter(
         return apps.size
     }
 
+    /**
+     * Updates app list with DiffUtil for efficient animations.
+     * Preserves RecyclerView position when possible.
+     * 
+     * @param newApps New list of apps
+     */
     fun updateApps(newApps: List<Triple<LauncherActivityInfo, UserHandle, Int>>) {
         val diffCallback = AppDiffCallback(apps, newApps)
         val diffResult = DiffUtil.calculateDiff(diffCallback)
@@ -224,6 +286,12 @@ class AppMenuAdapter(
         diffResult.dispatchUpdatesTo(this)
     }
 
+    /**
+     * Replaces app list without diff calculation.
+     * Use for search results where positions change significantly.
+     * 
+     * @param newApps New list of apps
+     */
     @SuppressLint("NotifyDataSetChanged")
     fun setApps(newApps: List<Triple<LauncherActivityInfo, UserHandle, Int>>) {
         apps = newApps.toMutableList()
