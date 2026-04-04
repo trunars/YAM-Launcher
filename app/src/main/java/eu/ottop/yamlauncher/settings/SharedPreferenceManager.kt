@@ -116,6 +116,16 @@ class SharedPreferenceManager(private val context: Context) {
     fun isBarVisible(): Boolean = preferences.getBooleanOrDefault("barVisibility", false)
 
     /**
+     * Checks if app drawer darkening is enabled.
+     */
+    fun isAppDrawerDarkeningEnabled(): Boolean = preferences.getBooleanOrDefault("appDrawerDarkening", true)
+
+    /**
+     * Checks if settings panel darkening is enabled.
+     */
+    fun isSettingsDarkeningEnabled(): Boolean = preferences.getBooleanOrDefault("settingsDarkening", true)
+
+    /**
      * Gets animation speed in milliseconds.
      */
     fun getAnimationSpeed(): Long {

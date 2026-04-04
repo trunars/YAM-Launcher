@@ -71,17 +71,17 @@ class Animations (context: Context) {
         homeView.fadeOut()
     }
 
-    /**
-     * Animates semi-transparent overlay appearing on app menu open.
-     * Only animates if background is fully transparent.
-     *
-     * @param activity The activity to animate
-     */
-    fun backgroundIn(activity: Activity) {
-        val originalColor = sharedPreferenceManager.getBgColor()
+/**
+ * Animates semi-transparent overlay appearing on app menu open.
+ * Only animates if background is fully transparent and darkening is enabled.
+ *
+ * @param activity The activity to animate
+ */
+fun backgroundIn(activity: Activity) {
+    val originalColor = sharedPreferenceManager.getBgColor()
 
-        // Only animate darkness onto the transparent background
-        if (originalColor == Color.parseColor("#00000000")) {
+    // Only animate darkness onto the transparent background if enabled
+    if (originalColor == Color.parseColor("#00000000") && sharedPreferenceManager.isAppDrawerDarkeningEnabled()) {
             val newColor = Color.parseColor("#3F000000")
 
             val backgroundColorAnimator = ValueAnimator.ofObject(ArgbEvaluator(), originalColor, newColor)
@@ -98,18 +98,18 @@ class Animations (context: Context) {
         }
     }
 
-    /**
-     * Animates semi-transparent overlay disappearing on return to home.
-     * Only animates if background is fully transparent.
-     *
-     * @param activity The activity to animate
-     * @param duration Animation duration in milliseconds
-     */
-    fun backgroundOut(activity: Activity, duration: Long) {
-        val newColor = sharedPreferenceManager.getBgColor()
+/**
+ * Animates semi-transparent overlay disappearing on return to home.
+ * Only animates if background is fully transparent and darkening is enabled.
+ *
+ * @param activity The activity to animate
+ * @param duration Animation duration in milliseconds
+ */
+fun backgroundOut(activity: Activity, duration: Long) {
+    val newColor = sharedPreferenceManager.getBgColor()
 
-        // Only animate darkness onto the transparent background
-        if (newColor == Color.parseColor("#00000000")) {
+    // Only animate darkness onto the transparent background if enabled
+    if (newColor == Color.parseColor("#00000000") && sharedPreferenceManager.isAppDrawerDarkeningEnabled()) {
             val originalColor = Color.parseColor("#3F000000")
 
             val backgroundColorAnimator = ValueAnimator.ofObject(ArgbEvaluator(), originalColor, newColor)

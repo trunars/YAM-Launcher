@@ -135,7 +135,7 @@ class UIUtils(private val context: Context) {
      */
     fun setBackground(window: Window, applyDarkening: Boolean = false) {
         val bgColor = sharedPreferenceManager.getBgColor()
-        val finalColor = if (applyDarkening && bgColor == Color.parseColor("#00000000")) {
+        val finalColor = if (applyDarkening && bgColor == Color.parseColor("#00000000") && sharedPreferenceManager.isSettingsDarkeningEnabled()) {
             Color.parseColor("#3F000000")
         } else {
             bgColor
