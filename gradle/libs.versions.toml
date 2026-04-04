@@ -21,6 +21,13 @@ activity-compose = "1.10.1"
 biometric-ktx = "1.4.0-alpha02"
 localbroadcastmanager = "1.1.0"
 
+# Testing
+junit = "4.13.2"
+kotlinx-coroutines-test = "1.8.1"
+androidx-junit = "1.2.1"
+espresso-core = "3.6.1"
+mockito-core = "5.12.0"
+
 
 [libraries]
 # Core Libraries
@@ -39,6 +46,13 @@ biometric-ktx = { group = "androidx.biometric", name = "biometric-ktx", version.
 
 # LocalBroadcastManager
 localbroadcastmanager = { group = "androidx.localbroadcastmanager", name = "localbroadcastmanager", version.ref = "localbroadcastmanager" }
+
+# Testing
+junit = { group = "junit", name = "junit", version.ref = "junit" }
+kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "kotlinx-coroutines-test" }
+androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidx-junit" }
+espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espresso-core" }
+mockito-core = { group = "org.mockito", name = "mockito-core", version.ref = "mockito-core" }
 
 
 [plugins]

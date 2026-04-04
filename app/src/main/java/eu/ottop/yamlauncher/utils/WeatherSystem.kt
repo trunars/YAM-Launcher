@@ -9,9 +9,10 @@ import androidx.core.content.ContextCompat
 import eu.ottop.yamlauncher.MainActivity
 import eu.ottop.yamlauncher.R
 import eu.ottop.yamlauncher.settings.SharedPreferenceManager
-import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
@@ -58,32 +59,35 @@ class WeatherSystem(private val context: Context) {
                 LocationManager.GPS_PROVIDER
             }
 
-            // Request current location asynchronously
-            locationManager.getCurrentLocation(
-                provider,
-                null,
-                ContextCompat.getMainExecutor(context)
-            )
-
-            { location: Location? ->
-                if (location != null) {
-                    // Got valid location, save and update weather
-                    CoroutineScope(Dispatchers.IO).launch {
-                        val latitude = location.latitude
-                        val longitude = location.longitude
-                        sharedPreferenceManager.setWeatherLocation(
-                            "latitude=${latitude}&longitude=${longitude}",
-                            context.getString(R.string.latest_location)
-                        )
-                        activity.updateWeatherText()
+            // Request current location asynchronously with callback
+            val location: Location? = withContext(Dispatchers.IO) {
+                try {
+                    suspendCancellableCoroutine<Location?> { continuation ->
+                        locationManager.getCurrentLocation(
+                            provider,
+                            null,
+                            ContextCompat.getMainExecutor(context)
+                        ) { loc: Location? ->
+                            continuation.resume(loc, null)
+                        }
                     }
-
-                } else {
-                    // Location unavailable, still update weather (will show empty)
-                    CoroutineScope(Dispatchers.IO).launch {
-                        activity.updateWeatherText()
-                    }
+                } catch (e: Exception) {
+                    logger.w("WeatherSystem", "Failed to get GPS location: ${e.message}")
+                    null
                 }
+            }
+
+            if (location != null) {
+                val latitude = location.latitude
+                val longitude = location.longitude
+                sharedPreferenceManager.setWeatherLocation(
+                    "latitude=${latitude}&longitude=${longitude}",
+                    context.getString(R.string.latest_location)
+                )
+                activity.updateWeatherText()
+            } else {
+                // Location unavailable, still update weather (will show empty)
+                activity.updateWeatherText()
             }
         } catch(_: Exception) {
             return

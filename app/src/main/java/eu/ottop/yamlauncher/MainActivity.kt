@@ -520,8 +520,12 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
             if (savedView != null && canLaunchShortcut) {
                 val profileIndex = validateProfileIndex(savedView) ?: return@setOnClickListener
                 val componentName = resolveComponentName(savedView, profileIndex) ?: return@setOnClickListener
+                // Double-check profile is valid before access
                 if (profileIndex in launcherApps.profiles.indices) {
                     appUtils.launchApp(componentName, launcherApps.profiles[profileIndex])
+                } else {
+                    logger.w("MainActivity", "Invalid profile index: $profileIndex")
+                    Toast.makeText(this@MainActivity, getString(R.string.launch_error), Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -970,10 +974,10 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
             // Don't reset app menu while under a search
             if (!isSearchActive) {
                 val updatedApps = appUtils.getInstalledApps(showHidden)
-                if (!listsEqual(installedApps, updatedApps)) {
-
+                // Use structural equality check and atomic update pattern
+                if (installedApps.isEmpty() || !listsEqual(installedApps, updatedApps)) {
                     updateMenu(updatedApps)
-
+                    // Atomic update - assign once
                     installedApps = updatedApps
                     currentFilteredApps = updatedApps
                     appSearchIndexDirty = true
@@ -1364,7 +1368,9 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
      */
     private suspend fun filterItems(query: String?) {
         val cleanQuery = stringUtils.cleanString(query)
-        when (menuView.displayedChild) {
+        // Guard against uninitialized menuView
+        val displayedChild = if (::menuView.isInitialized) menuView.displayedChild else 0
+        when (displayedChild) {
             0 -> {
                 val appsToFilter = installedApps
                 val result = withContext(Dispatchers.Default) {
@@ -1452,13 +1458,24 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
     }
 
     private suspend fun applySearchFilter(newFilteredApps: List<Triple<LauncherActivityInfo, UserHandle, Int>>) {
-        if (sharedPreferenceManager.isAutoLaunchEnabled() && menuView.displayedChild == 0 && appAdapter?.shortcutTextView == null && newFilteredApps.size == 1) {
+        // Guard against uninitialized views - check before accessing
+        val shouldAutoLaunch = if (::menuView.isInitialized && ::appRecycler.isInitialized) {
+            sharedPreferenceManager.isAutoLaunchEnabled() && menuView.displayedChild == 0 && appAdapter?.shortcutTextView == null && newFilteredApps.size == 1
+        } else {
+            false
+        }
+        
+        if (shouldAutoLaunch) {
             appUtils.launchApp(newFilteredApps[0].first.componentName, newFilteredApps[0].second)
         } else {
             updateMenu(newFilteredApps)
             currentFilteredApps = newFilteredApps
-            refreshAlphabetIndex(currentFilteredApps)
-            appRecycler.scrollToPosition(0);
+            if (::alphabetIndex.isInitialized) {
+                refreshAlphabetIndex(currentFilteredApps)
+            }
+            if (::appRecycler.isInitialized) {
+                appRecycler.scrollToPosition(0)
+            }
         }
     }
 
@@ -1606,8 +1623,8 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
             val savedView = sharedPreferenceManager.getShortcut(i)
 
             if (savedView != null && savedView.getOrNull(3)?.toBoolean() != true) {
-                val componentName = savedView[0]
-                if (componentName != "e") {
+                val componentName = savedView.getOrNull(0)
+                if (componentName != null && componentName != "e") {
                     val packageName = if (componentName.contains("/")) {
                         componentName.substringBefore("/")
                     } else {
@@ -1621,9 +1638,16 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
                         null
                     }
 
-                    dotDrawable?.setTint(sharedPreferenceManager.getTextColor())
+                    // Guard against null tint calls
+                    if (dotDrawable != null) {
+                        try {
+                            dotDrawable.setTint(sharedPreferenceManager.getTextColor())
+                        } catch (_: Exception) {
+                            // Older Android versions may not support setTint
+                        }
+                    }
                     textView.setCompoundDrawablesRelativeWithIntrinsicBounds(
-                        textView.compoundDrawablesRelative[0],
+                        textView.compoundDrawablesRelative.getOrNull(0),
                         null,
                         dotDrawable,
                         null

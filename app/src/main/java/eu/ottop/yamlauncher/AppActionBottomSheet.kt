@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.content.pm.LauncherActivityInfo
 import android.content.pm.LauncherApps
+import android.os.Build
 import android.os.Bundle
 import android.os.UserHandle
 import android.view.LayoutInflater
@@ -117,7 +118,12 @@ class AppActionBottomSheet : BottomSheetDialogFragment() {
 
             if (componentNameStr != null) {
                 val launcherApps = requireContext().getSystemService(Context.LAUNCHER_APPS_SERVICE) as LauncherApps
-                userHandle = launcherApps.profiles.getOrNull(userHandleId)
+                // launcherApps.profiles requires API 26+
+                userHandle = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    launcherApps.profiles.getOrNull(userHandleId)
+                } else {
+                    null
+                }
                 val componentName = android.content.ComponentName.unflattenFromString(componentNameStr)
                 appActivity = componentName?.let { cn ->
                     userHandle?.let { uh ->

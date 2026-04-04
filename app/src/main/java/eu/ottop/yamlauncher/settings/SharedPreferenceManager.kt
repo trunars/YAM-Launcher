@@ -675,11 +675,9 @@ class SharedPreferenceManager(private val context: Context) {
         val key = "name$componentName-$profile"
         val savedName = preferences.getString(key, null)
         if (savedName.isNullOrBlank()) {
-            preferences.edit(commit = true) {
-                val latestValue = preferences.getString(key, null)
-                if (latestValue.isNullOrBlank()) {
-                    remove(key)
-                }
+            // Clean up stale key if exists (async, won't block main thread)
+            preferences.edit {
+                remove(key)
             }
             return appName
         }
@@ -692,11 +690,9 @@ class SharedPreferenceManager(private val context: Context) {
             componentName
         }
         if (savedName == packageName || savedName == componentName) {
-            preferences.edit(commit = true) {
-                val latestValue = preferences.getString(key, null)
-                if (latestValue == packageName || latestValue == componentName) {
-                    remove(key)
-                }
+            // Clean up stale entry (async, won't block main thread)
+            preferences.edit {
+                remove(key)
             }
             return appName
         }
