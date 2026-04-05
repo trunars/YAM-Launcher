@@ -2,9 +2,8 @@
 <img src="https://codeberg.org/thomasboom/YAM-Launcher/raw/branch/main/metadata/en-US/images/featureGraphic.png" width=100%/>
 </p>
 
-> [!WARNING]
-> GitHub randomly decided to suspend my account, including the YAM Launcher repository. I'm in contact with support to get it resolved as soon as possible. In the meantime, some images may not load or some links might be broken.
-
+> [!NOTE]
+> GitHub suspended my personal account and the YAM Launcher repository. While both are back up, I've permanently moved all code hosting to Codeberg. The GitHub mirror remains available for browsing, but contributions (PRs, issues) happen on Codeberg only.
 # YAM Launcher
 
 YAM (Yet Another Minimalist) Launcher is a minimalist, open, customisable and text-based launcher for Android.
