@@ -10,6 +10,7 @@ import android.content.pm.LauncherActivityInfo
 import android.content.pm.LauncherApps
 import android.content.pm.ServiceInfo
 import android.provider.Settings
+import android.view.ContextThemeWrapper
 import android.view.accessibility.AccessibilityManager
 import androidx.appcompat.app.AppCompatActivity.ACCESSIBILITY_SERVICE
 import eu.ottop.yamlauncher.R
@@ -94,7 +95,12 @@ class GestureUtils(private val context: Context) {
      * Used before enabling screen lock functionality.
      */
     fun promptEnableAccessibility() {
-        MaterialAlertDialogBuilder(context).apply {
+        MaterialAlertDialogBuilder(
+            ContextThemeWrapper(
+                context,
+                com.google.android.material.R.style.Theme_MaterialComponents_DayNight_NoActionBar
+            )
+        ).apply {
             setTitle(context.getString(R.string.confirm_title))
             setMessage(context.getString(R.string.screenlock_confirmation))
             setPositiveButton(context.getString(R.string.confirm_yes)) { _, _ ->

@@ -3,6 +3,7 @@ package eu.ottop.yamlauncher.settings
 import android.content.Context
 import android.content.SharedPreferences
 import android.util.TypedValue
+import android.view.ContextThemeWrapper
 import androidx.core.content.edit
 import androidx.core.graphics.toColorInt
 import androidx.preference.PreferenceManager
@@ -723,7 +724,12 @@ class SharedPreferenceManager(private val context: Context) {
      * Clears all preferences after confirmation.
      */
     fun resetAllPreferences() {
-        MaterialAlertDialogBuilder(context).apply {
+        MaterialAlertDialogBuilder(
+            ContextThemeWrapper(
+                context,
+                com.google.android.material.R.style.Theme_MaterialComponents_DayNight_NoActionBar
+            )
+        ).apply {
             setTitle(context.getString(R.string.confirm_title))
             setMessage(context.getString(R.string.reset_confirm_text))
             setPositiveButton(context.getString(R.string.confirm_yes)) { _, _ ->

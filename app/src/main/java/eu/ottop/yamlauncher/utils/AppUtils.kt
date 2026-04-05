@@ -4,6 +4,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import android.content.ComponentName
 import android.content.Context
 import android.content.pm.ApplicationInfo
+import android.view.ContextThemeWrapper
 import android.content.pm.LauncherActivityInfo
 import android.content.pm.LauncherApps
 import android.os.UserHandle
@@ -167,7 +168,12 @@ class AppUtils(private val context: Context, private val launcherApps: LauncherA
      * Used when "confirm before launch" preference is enabled.
      */
     private fun showConfirmationDialog(componentName: ComponentName, userHandle: UserHandle) {
-        MaterialAlertDialogBuilder(context).apply {
+        MaterialAlertDialogBuilder(
+            ContextThemeWrapper(
+                context,
+                com.google.android.material.R.style.Theme_MaterialComponents_DayNight_NoActionBar
+            )
+        ).apply {
             setTitle(getString(context, R.string.confirm_title))
             setMessage(getString(context, R.string.launch_confirmation_text))
 

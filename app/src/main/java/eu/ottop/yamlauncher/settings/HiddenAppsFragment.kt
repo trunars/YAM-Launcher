@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.os.UserHandle
 import android.text.Editable
 import android.text.TextWatcher
+import android.view.ContextThemeWrapper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -157,7 +158,12 @@ class HiddenAppsFragment : Fragment(), HiddenAppsAdapter.OnItemClickListener, Ti
      * Shows confirmation before unhiding app.
      */
     private fun showConfirmationDialog(appInfo: LauncherActivityInfo, appName: String, profile: Int) {
-        MaterialAlertDialogBuilder(requireContext()).apply {
+        MaterialAlertDialogBuilder(
+            ContextThemeWrapper(
+                requireContext(),
+                com.google.android.material.R.style.Theme_MaterialComponents_DayNight_NoActionBar
+            )
+        ).apply {
             setTitle(getString(R.string.confirm_title))
             setMessage("${getString(R.string.hidden_confirm_text)} $appName?")
             setPositiveButton(getString(R.string.confirm_yes)) { _, _ ->
