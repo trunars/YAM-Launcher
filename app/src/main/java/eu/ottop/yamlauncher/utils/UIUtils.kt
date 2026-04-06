@@ -53,34 +53,7 @@ class UIUtils(private val context: Context) {
 
     private val sharedPreferenceManager = SharedPreferenceManager(context)
 
-    // ============================================
-    // Style Cache
-    // ============================================
-
-    private var cachedAlignment: String? = null
-    private var cachedSize: String? = null
-    private var cachedSpacing: Int? = null
-    private var cachedTypeface: Typeface? = null
-    private var styleCacheValid = false
-
-    fun invalidateStyleCache() {
-        styleCacheValid = false
-        cachedAlignment = null
-        cachedSize = null
-        cachedSpacing = null
-        cachedTypeface = null
-    }
-
-    private fun ensureStyleCache() {
-        if (styleCacheValid) return
-        cachedAlignment = sharedPreferenceManager.getAppAlignment()
-        cachedSize = sharedPreferenceManager.getAppSize()
-        cachedSpacing = sharedPreferenceManager.getAppSpacing()
-        cachedTypeface = resolveTypeface()
-        styleCacheValid = true
-    }
-
-    private fun resolveTypeface(): Typeface? {
+    fun resolveTypeface(): Typeface? {
         val font = sharedPreferenceManager.getTextFont()
         val style = sharedPreferenceManager.getTextStyle()
 
@@ -240,15 +213,11 @@ class UIUtils(private val context: Context) {
                 // Apply color to compound drawables (icons next to text)
                 val drawables = textView.compoundDrawables
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    drawables.getOrNull(0)?.colorFilter =
-                        BlendModeColorFilter(sharedPreferenceManager.getTextColor(), BlendMode.SRC_ATOP)
-                    drawables.getOrNull(2)?.colorFilter =
-                        BlendModeColorFilter(sharedPreferenceManager.getTextColor(), BlendMode.SRC_ATOP)
+                    drawables.getOrNull(0)?.colorFilter = BlendModeColorFilter(color, BlendMode.SRC_ATOP)
+                    drawables.getOrNull(2)?.colorFilter = BlendModeColorFilter(color, BlendMode.SRC_ATOP)
                 } else {
-                    drawables.getOrNull(0)?.colorFilter =
-                        PorterDuffColorFilter(sharedPreferenceManager.getTextColor(), PorterDuff.Mode.SRC_ATOP)
-                    drawables.getOrNull(2)?.colorFilter =
-                        PorterDuffColorFilter(sharedPreferenceManager.getTextColor(), PorterDuff.Mode.SRC_ATOP)
+                    drawables.getOrNull(0)?.colorFilter = PorterDuffColorFilter(color, PorterDuff.Mode.SRC_ATOP)
+                    drawables.getOrNull(2)?.colorFilter = PorterDuffColorFilter(color, PorterDuff.Mode.SRC_ATOP)
                 }
 
                 // Apply text shadow if enabled
@@ -359,29 +328,27 @@ class UIUtils(private val context: Context) {
      *
      * @param view Root view to process
      */
-    fun setTextFont(view: View) {
-
+    fun setTextFont(view: View, typeface: Typeface?) {
         when {
             view is ViewGroup -> {
                 view.children.forEach { child ->
-                    setTextFont(child)
+                    setTextFont(child, typeface)
                 }
             }
             hasMethod(view, "setTextAppearance") -> {
-                setFont(view as TextView)
+                setFont(view as TextView, typeface)
             }
         }
     }
 
     /**
      * Sets font and style for a specific TextView.
-     * Supports system fonts, custom fonts, and style variations.
      *
      * @param view TextView to style
+     * @param typeface Typeface to apply
      */
-    fun setFont(view: TextView) {
-        ensureStyleCache()
-        view.typeface = cachedTypeface
+    fun setFont(view: TextView, typeface: Typeface?) {
+        view.typeface = typeface
     }
 
     /**
@@ -617,11 +584,10 @@ class UIUtils(private val context: Context) {
      */
     fun setAppAlignment(
         textView: TextView,
+        alignment: String?,
         editText: TextView? = null,
         regionText: TextView? = null,
     ) {
-        ensureStyleCache()
-        val alignment = cachedAlignment
         setTextGravity(textView, alignment)
 
         if (regionText != null) {
@@ -800,11 +766,10 @@ class UIUtils(private val context: Context) {
      */
     fun setAppSize(
         textView: TextView,
+        size: String?,
         editText: TextInputEditText? = null,
         regionText: TextView? = null
     ) {
-        ensureStyleCache()
-        val size = cachedSize
         setTextSize(textView, size, 21F, 24F, 27F, 30F, 33F, 36F)
         if (editText != null) {
             setTextSize(editText, size, 21F, 24F, 27F, 30F, 33F, 36F)
@@ -887,9 +852,7 @@ class UIUtils(private val context: Context) {
      *
      * @param item TextView to pad
      */
-    fun setItemSpacing(item: TextView) {
-        ensureStyleCache()
-        val spacing = cachedSpacing
+    fun setItemSpacing(item: TextView, spacing: Int?) {
         if (spacing != null) {
             val spacingPx = dpToPx(spacing)
             item.setPadding(item.paddingLeft, spacingPx, item.paddingRight, spacingPx)

@@ -601,9 +601,10 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
 
         uiUtils.setBackground(window, applyHomescreenDarkening = true)
 
-        uiUtils.setTextFont(binding.homeView)
-        uiUtils.setFont(searchView)
-        uiUtils.setFont(menuTitle)
+        val typeface = uiUtils.resolveTypeface()
+        uiUtils.setTextFont(binding.homeView, typeface)
+        uiUtils.setFont(searchView, typeface)
+        uiUtils.setFont(menuTitle, typeface)
 
         uiUtils.setTextColors(binding.homeView)
         uiUtils.setStatusBarColor(window)
@@ -843,9 +844,10 @@ class MainActivity : AppCompatActivity(), SharedPreferences.OnSharedPreferenceCh
             }
 
             "textFont", "textStyle" -> {
-                uiUtils.setTextFont(binding.homeView)
-                uiUtils.setFont(searchView)
-                uiUtils.setFont(menuTitle)
+                val typeface = uiUtils.resolveTypeface()
+                uiUtils.setTextFont(binding.homeView, typeface)
+                uiUtils.setFont(searchView, typeface)
+                uiUtils.setFont(menuTitle, typeface)
                 appAdapter?.onPreferencesChanged()
                 contactAdapter?.onPreferencesChanged()
             }

@@ -1,6 +1,7 @@
 package eu.ottop.yamlauncher
 
 import android.annotation.SuppressLint
+import android.graphics.Typeface
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -63,6 +64,10 @@ class ContactsAdapter(
     private var cachedTextColor: Int = sharedPreferenceManager.getTextColor()
     private var cachedTextShadowEnabled: Boolean = sharedPreferenceManager.isTextShadowEnabled()
     private var cachedContactsEnabled: Boolean = sharedPreferenceManager.areContactsEnabled()
+    private var cachedAlignment: String? = sharedPreferenceManager.getAppAlignment()
+    private var cachedSize: String? = sharedPreferenceManager.getAppSize()
+    private var cachedSpacing: Int? = sharedPreferenceManager.getAppSpacing()
+    private var cachedTypeface: Typeface? = uiUtils.resolveTypeface()
 
     private val drawableEmpty = ResourcesCompat.getDrawable(activity.resources, R.drawable.ic_empty, null)
 
@@ -70,7 +75,10 @@ class ContactsAdapter(
         cachedTextColor = sharedPreferenceManager.getTextColor()
         cachedTextShadowEnabled = sharedPreferenceManager.isTextShadowEnabled()
         cachedContactsEnabled = sharedPreferenceManager.areContactsEnabled()
-        uiUtils.invalidateStyleCache()
+        cachedAlignment = sharedPreferenceManager.getAppAlignment()
+        cachedSize = sharedPreferenceManager.getAppSize()
+        cachedSpacing = sharedPreferenceManager.getAppSpacing()
+        cachedTypeface = uiUtils.resolveTypeface()
         notifyDataSetChanged()
     }
 
@@ -133,10 +141,10 @@ class ContactsAdapter(
         holder.textView.setCompoundDrawablesWithIntrinsicBounds(drawableEmpty, null, drawableEmpty, null)
 
         // Apply styling from preferences
-        uiUtils.setAppAlignment(holder.textView)
-        uiUtils.setAppSize(holder.textView)
-        uiUtils.setItemSpacing(holder.textView)
-        uiUtils.setTextFont(holder.listItem)
+        uiUtils.setAppAlignment(holder.textView, cachedAlignment)
+        uiUtils.setAppSize(holder.textView, cachedSize)
+        uiUtils.setItemSpacing(holder.textView, cachedSpacing)
+        uiUtils.setTextFont(holder.listItem, cachedTypeface)
         holder.textView.setTextColor(cachedTextColor)
         if (cachedTextShadowEnabled) {
             holder.textView.setShadowLayer(4f, 2f, 2f, android.graphics.Color.BLACK)

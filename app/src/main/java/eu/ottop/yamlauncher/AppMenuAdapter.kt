@@ -6,6 +6,7 @@ import android.content.pm.LauncherActivityInfo
 import android.content.pm.LauncherApps
 import android.graphics.BlendMode
 import android.graphics.BlendModeColorFilter
+import android.graphics.Typeface
 import android.os.UserHandle
 import android.view.LayoutInflater
 import android.view.View
@@ -91,6 +92,10 @@ class AppMenuAdapter(
     private var cachedTextColor: Int = sharedPreferenceManager.getTextColor()
     private var cachedTextShadowEnabled: Boolean = sharedPreferenceManager.isTextShadowEnabled()
     private var cachedContactsEnabled: Boolean = sharedPreferenceManager.areContactsEnabled()
+    private var cachedAlignment: String? = sharedPreferenceManager.getAppAlignment()
+    private var cachedSize: String? = sharedPreferenceManager.getAppSize()
+    private var cachedSpacing: Int? = sharedPreferenceManager.getAppSpacing()
+    private var cachedTypeface: Typeface? = uiUtils.resolveTypeface()
 
     private val drawableEmpty = ResourcesCompat.getDrawable(activity.resources, R.drawable.ic_empty, null)
     private val drawablePinFilled = ResourcesCompat.getDrawable(activity.resources, R.drawable.keep_filled_15px, null)
@@ -101,7 +106,10 @@ class AppMenuAdapter(
         cachedTextColor = sharedPreferenceManager.getTextColor()
         cachedTextShadowEnabled = sharedPreferenceManager.isTextShadowEnabled()
         cachedContactsEnabled = sharedPreferenceManager.areContactsEnabled()
-        uiUtils.invalidateStyleCache()
+        cachedAlignment = sharedPreferenceManager.getAppAlignment()
+        cachedSize = sharedPreferenceManager.getAppSize()
+        cachedSpacing = sharedPreferenceManager.getAppSpacing()
+        cachedTypeface = uiUtils.resolveTypeface()
         notifyDataSetChanged()
     }
 
@@ -238,10 +246,10 @@ class AppMenuAdapter(
         }
 
         // Apply styling from preferences
-        uiUtils.setAppAlignment(holder.textView, holder.editText)
-        uiUtils.setAppSize(holder.textView, holder.editText)
-        uiUtils.setItemSpacing(holder.textView)
-        uiUtils.setTextFont(holder.listItem)
+        uiUtils.setAppAlignment(holder.textView, cachedAlignment, holder.editText)
+        uiUtils.setAppSize(holder.textView, cachedSize, holder.editText)
+        uiUtils.setItemSpacing(holder.textView, cachedSpacing)
+        uiUtils.setTextFont(holder.listItem, cachedTypeface)
         holder.textView.setTextColor(cachedTextColor)
         if (cachedTextShadowEnabled) {
             holder.textView.setShadowLayer(4f, 2f, 2f, android.graphics.Color.BLACK)
