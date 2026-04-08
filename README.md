@@ -101,3 +101,9 @@ You can optionally enable accessibility services for YAM Launcher if you choose 
 [Codeberg (main)](https://codeberg.org/thomasboom/YAM-Launcher/)
 
 [GitHub (secondary, read-only)](https://github.com/ThomasNowProductions/YAM-Launcher/)
+
+## Support
+
+If YAM Launcher brings you joy, consider buying me a coffee:
+
+[![Liberapay](https://liberapay.com/assets/widgets/donate.svg)](https://liberapay.com/thomasboom)
